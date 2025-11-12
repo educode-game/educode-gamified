@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "nuxt.config.ts", "use": "@vercel/static-build", "config": { "zeroConfig": true } }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/server/api/$1" },
+    { "src": "/(.*)", "dest": "/" }
+  ]
+}
