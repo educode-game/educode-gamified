@@ -5,17 +5,20 @@ import { ref } from 'vue'
 export const useRunner = () => {
   const output = ref<string>('')
   const running = ref(false)
-  const error = ref<string | null>(null)
+  const error = ref<string>('')
 
   const run = async (language: string, code: string): Promise<void> => {
     running.value = true
     output.value = ''
-    error.value = null
+    error.value = ''
     try {
       const { data } = await axios.post('/api/run', { language, code })
-      output.value = data?.run?.output ?? data?.output ?? JSON.stringify(data)
-    } catch (e: unknown) {
-      error.value = e instanceof Error ? e.message : String(e)
+      // normalize common responses
+      if (data?.run?.output) output.value = String(data.run.output)
+      else if (data?.output) output.value = String(data.output)
+      else output.value = JSON.stringify(data)
+    } catch (e: any) {
+      error.value = e?.response?.data?.error || e?.message || String(e)
     } finally {
       running.value = false
     }

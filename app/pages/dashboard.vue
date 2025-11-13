@@ -3,8 +3,11 @@
     <!-- Navbar -->
     <nav class="dashboard-navbar">
       <div class="navbar-left" @click="router.push('/index')">
-        <img src="/logo.png" alt="EduCode Logo" class="navbar-logo" />
-        <h2>EduCode</h2>
+         <img src="/logo.png" class="logo" />
+      <div class="brand-text">
+        <h3>EduCode</h3>
+        <p>Write. Run. Learn. Play.</p>
+      </div>
       </div>
 
       <div class="navbar-right">
@@ -68,14 +71,7 @@
               <i class="ri-code-s-slash-line"></i> Playground
             </v-btn>
 
-            <div class="ide-preview">
-              <h4>Code Playground</h4>
-              <p>Practice C++, Python, and Java instantly.</p>
-
-              <div class="ide-box">
-                <pre>// IDE loads here...</pre>
-              </div>
-            </div>
+            
           </div>
 
           <!-- WORLDS BUTTON -->
@@ -87,7 +83,7 @@
           <v-btn class="btn gradient big-btn" @click="router.push('/leaderboard')">
             <i class="ri-trophy-fill"></i> Leaderboard
           </v-btn>
-
+          
         </div>
       </div>
 
@@ -218,8 +214,24 @@ const logout = async () => {
   cursor: pointer;
 }
 
-.navbar-logo {
-  width: 48px;
+.logo {
+  max-width: 10vw;
+  filter: drop-shadow(0 0 8px rgba(0,229,255,0.45));
+}
+
+.brand-text p {
+  margin: 0;
+  margin-top: -6px;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.55);
+}
+
+.brand-text h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  background: linear-gradient(90deg,#9333ea,#00e5ff);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .navbar-left h2 {
