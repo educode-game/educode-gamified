@@ -225,7 +225,7 @@ const logout = async () => {
 .navbar-left h2 {
   font-size: 1.5rem;
   background: linear-gradient(90deg, #9333ea, #00e5ff);
-  -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
