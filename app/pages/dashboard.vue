@@ -2,7 +2,7 @@
   <div class="dashboard-page">
     <!-- Navbar -->
     <nav class="dashboard-navbar">
-      <div class="navbar-left" @click="router.push('/landing')">
+      <div class="navbar-left" @click="router.push('/index')">
         <img src="/logo.png" alt="EduCode Logo" class="navbar-logo" />
         <h2>EduCode</h2>
       </div>
@@ -13,10 +13,13 @@
       </div>
     </nav>
 
-    <!-- Dashboard Content -->
+    <!-- Dashboard Grid -->
     <div class="dashboard-grid">
-      <!-- Profile + XP -->
+
+      <!-- Profile + XP Row -->
       <div class="profile-xp-row">
+
+        <!-- Profile Card -->
         <div class="dashboard-card profile-info-card">
           <img src="/default-avatar.jpg" alt="Profile" class="avatar" />
           <div>
@@ -25,25 +28,29 @@
           </div>
         </div>
 
+        <!-- XP Card -->
         <div class="dashboard-card xp-card">
           <div class="xp-header">
             <h3>Experience Progress</h3>
             <span>Level {{ profile?.level }}</span>
           </div>
+
           <div class="xp-bar">
             <div class="xp-bar-fill" :style="{ width: xpPercentage + '%' }"></div>
           </div>
+
           <div class="xp-text">
             <span>XP: {{ profile?.xp_total }}</span>
             <span>Next Level: {{ nextLevelXp }}</span>
           </div>
         </div>
+
       </div>
 
-      <!-- Stats Row -->
+      <!-- Stats -->
       <div class="stats-row">
         <div class="dashboard-card stat-card" v-for="stat in stats" :key="stat.label">
-          <i :class="stat.icon"></i>
+          <i :class="stat.icon" class="stat-icon"></i>
           <div>
             <h4>{{ stat.value }}</h4>
             <p>{{ stat.label }}</p>
@@ -54,48 +61,126 @@
       <!-- Actions Row -->
       <div class="actions-row">
         <div class="actions-card glow-animate">
-          <v-btn class="btn gradient" @click="router.push('/playground')">
-            <i class="ri-code-s-slash-line"></i> Playground
-          </v-btn>
-          <v-btn class="btn gradient" @click="router.push('/worlds')">
+
+          <!-- PLAYGROUND -->
+          <div class="playground-card">
+            <v-btn class="btn gradient w-100" @click="router.push('/playground')">
+              <i class="ri-code-s-slash-line"></i> Playground
+            </v-btn>
+
+            <div class="ide-preview">
+              <h4>Code Playground</h4>
+              <p>Practice C++, Python, and Java instantly.</p>
+
+              <div class="ide-box">
+                <pre>// IDE loads here...</pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- WORLDS BUTTON -->
+          <v-btn class="btn gradient big-btn" @click="router.push('/worlds')">
             <i class="ri-gamepad-fill"></i> Worlds
           </v-btn>
-          <v-btn class="btn gradient" @click="router.push('/leaderboard')">
+
+          <!-- LEADERBOARD BUTTON -->
+          <v-btn class="btn gradient big-btn" @click="router.push('/leaderboard')">
             <i class="ri-trophy-fill"></i> Leaderboard
           </v-btn>
+
         </div>
       </div>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from '#app'
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "#app";
+import { useSupabase } from "~/composables/useSupabase";
+import { useAuthUser } from "~/composables/useAuthUser";
 
-const router = useRouter()
-const profile = ref({
-  username: 'Ragnarok',
-  email: 'ragnarokclassic41@gmail.com',
-  level: 1,
-  diamonds: 0,
-  lives: 5,
-  xp_total: 0
-})
+const router = useRouter();
+const supabase = useSupabase();
+const { fetchUser } = useAuthUser();
 
-const nextLevelXp = 230
-const xpPercentage = computed(() => (profile.value.xp_total / nextLevelXp) * 100)
-
-const stats = ref([
-  { label: 'Level', value: 1, icon: 'ri-bar-chart-box-fill' },
-  { label: 'Diamonds', value: 0, icon: 'ri-gem-fill' },
-  { label: 'Lives', value: 5, icon: 'ri-heart-3-fill' },
-  { label: 'XP', value: 0, icon: 'ri-flashlight-fill' }
-])
-
-const logout = () => {
-  // Supabase logout logic (to be added later)
+/* ------------------------------
+   PROFILE RESPONSE TYPE
+--------------------------------*/
+interface ProfileResponse {
+  profile: {
+    username: string;
+    email: string;
+    level: number;
+    diamonds: number;
+    lives: number;
+    xp_total: number;
+  } | null;
+  user?: any;
 }
+
+/* ------------------------------
+   STATE
+--------------------------------*/
+const profile = ref<any>(null);
+const sessionToken = ref<string | null>(null);
+const nextLevelXp = 230;
+
+/* ------------------------------
+   FETCH SESSION TOKEN
+--------------------------------*/
+const fetchSession = async () => {
+  const { data } = await supabase.auth.getSession();
+  sessionToken.value = data.session?.access_token || null;
+};
+
+/* ------------------------------
+   LOAD PROFILE FROM SERVER
+--------------------------------*/
+const loadProfile = async () => {
+  if (!sessionToken.value) return;
+
+  const res = await $fetch<ProfileResponse>("/api/auth/profile", {
+    headers: {
+      Authorization: `Bearer ${sessionToken.value}`,
+    },
+  });
+
+  profile.value = res.profile;
+};
+
+/* ------------------------------
+   ON MOUNT
+--------------------------------*/
+onMounted(async () => {
+  await fetchUser();     // ensures user state
+  await fetchSession();  // loads access token
+  await loadProfile();   // loads profile row
+});
+
+/* ------------------------------
+   COMPUTED
+--------------------------------*/
+const xpPercentage = computed(() => {
+  if (!profile.value) return 0;
+  return (profile.value.xp_total / nextLevelXp) * 100;
+});
+
+const stats = computed(() => [
+  { label: "Level", value: profile.value?.level, icon: "ri-bar-chart-box-fill" },
+  { label: "Diamonds", value: profile.value?.diamonds, icon: "ri-gem-fill" },
+  { label: "Lives", value: profile.value?.lives, icon: "ri-heart-3-fill" },
+  { label: "XP", value: profile.value?.xp_total, icon: "ri-flashlight-fill" },
+]);
+
+/* ------------------------------
+   LOGOUT
+--------------------------------*/
+const logout = async () => {
+  await supabase.auth.signOut();
+  router.push("/");
+};
 </script>
 
 <style scoped>
@@ -150,6 +235,7 @@ const logout = () => {
   gap: 20px;
 }
 
+/* Logout button */
 .logout-btn {
   background: linear-gradient(90deg, #ff4d4d, #ff7575) !important;
   color: white !important;
@@ -158,13 +244,12 @@ const logout = () => {
   text-transform: none;
 }
 
-/* === Dashboard Grid === */
+/* === Dashboard Layout === */
 .dashboard-grid {
   margin-top: 130px;
   width: 90%;
   max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   gap: 30px;
@@ -186,17 +271,11 @@ const logout = () => {
   box-shadow: 0 10px 35px rgba(0, 229, 255, 0.4);
 }
 
-/* === Profile + XP Row === */
+/* === Profile + XP === */
 .profile-xp-row {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 24px;
-}
-
-.profile-info-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
 }
 
 .avatar {
@@ -204,40 +283,29 @@ const logout = () => {
   height: 75px;
   border-radius: 50%;
   border: 2px solid #00e5ff;
-  padding: 3px;
 }
 
-/* XP Progress */
+/* XP */
 .xp-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 12px;
 }
 
 .xp-bar {
   height: 12px;
-  background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
   overflow: hidden;
-  margin-bottom: 8px;
 }
 
 .xp-bar-fill {
   height: 100%;
   background: linear-gradient(90deg, #9333ea, #00e5ff);
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
   transition: width 0.4s ease;
 }
 
-.xp-text {
-  display: flex;
-  justify-content: space-between;
-  color: #aaa;
-  font-size: 0.9rem;
-}
-
-/* === Stats Row === */
+/* === Stats === */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -246,96 +314,74 @@ const logout = () => {
 
 .stat-card {
   text-align: center;
-  padding: 28px;
+  padding: 26px 0;
 }
 
-.stat-card i {
-  font-size: 2rem;
+.stat-icon {
+  font-size: 2.4rem;
+  margin-bottom: 8px;
   color: #00e5ff;
-  display: block;
-  margin-bottom: 10px;
-  text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
-}
-
-.stat-card h4 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.stat-card p {
-  color: #b5b5b5;
-  font-size: 0.95rem;
-}
-
-/* Fix for diamond icon */
-.ri-gem-fill {
-  color: #00e5ff;
-  text-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.9);
 }
 
 /* === Actions Row === */
+
 .actions-row {
   display: flex;
   justify-content: center;
-  width: 100%;
 }
 
 .actions-card {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 28px;
   width: 100%;
   max-width: 1150px;
+  display: flex;
+  gap: 26px;
   background: rgba(10, 10, 25, 0.85);
+  padding: 35px;
   border-radius: 20px;
-  padding: 32px 50px;
-  box-shadow: 0 8px 25px rgba(0, 229, 255, 0.25);
-  backdrop-filter: blur(10px);
-  overflow: hidden;
+  position: relative;
 }
 
-/* Glow wave animation */
-.glow-animate::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -50%;
-  width: 200%;
-  height: 100%;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(0, 229, 255, 0.2),
-    transparent
-  );
-  animation: glowMove 3s linear infinite;
+/* Playground card FULL WIDTH */
+.playground-card {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-right: 20px;
+  border-right: 1px solid rgba(255,255,255,0.1);
 }
 
-@keyframes glowMove {
-  0% {
-    left: -50%;
-  }
-  100% {
-    left: 50%;
-  }
+/* Worlds / leaderboard BUTTONS */
+.big-btn {
+  flex: 1;
+}
+
+/* IDE BOX */
+.ide-preview h4 {
+  font-size: 1.2rem;
+  margin-bottom: 6px;
+}
+
+.ide-box {
+  margin-top: 10px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: #cfcfcf;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Buttons */
 .btn {
-  flex: 1;
   font-weight: 600 !important;
   border-radius: 10px !important;
-  text-transform: none !important;
-  padding: 16px 22px;
-  font-size: 1.05rem;
+  padding: 15px 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: all 0.25s ease;
 }
 
 .gradient {
@@ -346,29 +392,17 @@ const logout = () => {
 
 .btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 25px rgba(0, 229, 255, 0.7);
 }
 
 /* === Responsive === */
-@media (max-width: 1024px) {
-  .profile-xp-row {
-    grid-template-columns: 1fr;
-  }
-
-  .stats-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 970px) {
   .actions-card {
     flex-direction: column;
-    gap: 16px;
-    padding: 24px;
   }
 
-  .btn {
-    width: 100%;
+  .playground-card {
+    border-right: none;
+    padding-right: 0;
   }
 }
 </style>

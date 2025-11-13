@@ -17,30 +17,19 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useRoute, useRouter } from '#app'
-import { useSupabase } from '@/composables/useSupabase'
+import { useRoute } from '#app'
 
-const router = useRouter()
-const route = useRoute()
-const supabase = useSupabase()
 const snackbar = ref(false)
 const snackbarMessage = ref('')
+const route = useRoute()
 
-/* 🔒 Check auth state globally */
-supabase.auth.onAuthStateChange((event, session) => {
-  if (!session && route.path === '/') {
-    router.push('/landing')
-  }
-})
-
-/* ✅ Fixed: Prevent symbol-to-string crash */
+/* snack on navigation */
 watch(route, () => {
   const routeName = typeof route.name === 'symbol' ? String(route.name) : route.name
   snackbarMessage.value = `Navigated to ${routeName || route.path}`
   snackbar.value = true
 })
 </script>
-
 
 <style>
 html,

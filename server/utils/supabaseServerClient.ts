@@ -4,8 +4,8 @@ import { createClient, SupabaseClient, User } from '@supabase/supabase-js'
 export const createServiceSupabase = (): SupabaseClient => {
   const config = useRuntimeConfig()
   return createClient(
-    config.supabaseUrl as string,
-    config.supabaseServiceKey as string
+    String(config.supabaseUrl || process.env.SUPABASE_URL || ''),
+    String(config.supabaseServiceKey || process.env.SUPABASE_SERVICE_KEY || '')
   )
 }
 

@@ -1,118 +1,219 @@
 <template>
-  <v-app>
-    <v-container class="auth-container d-flex align-center justify-center">
-      <v-card class="auth-card" elevation="10">
+  <div class="auth-page">
+    <main class="auth-main">
+      <div class="card">
+      <section class="title-block">
+              <img src="/logo.png" alt="EduCode" class="logo" @click="goLanding" />
+        <h2 class="headline">
+          <span class="grad-static">Create your</span>
+          <span class="muted">EduCode Account</span>
+        </h2>
+        <p class="sub">Choose a username you love — you'll use it to sign in or use email.</p>
+      </section>
+        <form class="form" @submit.prevent="handleSignup">
+          
+          <div class="field">
+            <label class="label">Username</label>
+            <div class="input-wrap">
+              <span class="icon" aria-hidden>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <input v-model="username" type="text" placeholder="pick-a-username" required autocomplete="username" />
+            </div>
+          </div>
 
-            <!-- Logo -->
-                     <img
-                        src="/logo.png"
-                        alt="EduCode Logo"
-                        class="signup-logo"
-                        @click="navigateToLanding" 
-                    />
+          <div class="field">
+            <label class="label">Email</label>
+            <div class="input-wrap">
+              <span class="icon" aria-hidden>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M3 8l9 6 9-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.4"/>
+                </svg>
+              </span>
+              <input v-model="email" type="email" placeholder="you@domain.com" required autocomplete="email" />
+            </div>
+          </div>
 
-        <v-card-title class="text-center text-h5 mb-4">Create your EduCode Account</v-card-title>
+          <div class="field">
+            <label class="label">Password</label>
+            <div class="input-wrap">
+              <span class="icon" aria-hidden>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <rect x="3" y="11" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.4" />
+                  <path d="M7 11V8a5 5 0 0110 0v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <input v-model="password" type="password" placeholder="Choose a strong password" required autocomplete="new-password" />
+            </div>
+          </div>
 
-        <v-form @submit.prevent="handleSignup" class="d-flex flex-column gap-4">
-          <v-text-field
-            v-model="email"
-            label="Email"
-            type="email"
-            variant="outlined"
-            required
-          />
-          <v-text-field
-            v-model="password"
-            label="Password"
-            type="password"
-            variant="outlined"
-            required
-          />
+          <div v-if="error" class="error">{{ error }}</div>
+          <div v-if="success" class="success">{{ success }}</div>
 
-          <v-btn
-            type="submit"
-            class="btn-primary"
-            :loading="loading"
-            :disabled="loading"
-          >
-            Sign Up
-          </v-btn>
+          <button class="btn primary" :disabled="loading">
+            <span v-if="!loading">Sign Up</span><span v-else>Creating…</span>
+          </button>
 
-          <v-alert
-            v-if="message"
-            type="success"
-            variant="tonal"
-            class="mt-3 text-center"
-          >
-            {{ message }}
-          </v-alert>
-          <v-alert
-            v-if="error"
-            type="error"
-            variant="tonal"
-            class="mt-3 text-center"
-          >
-            {{ error }}
-          </v-alert>
+          <div class="form-footer">
+            <a href="/login" class="link">Already have an account? Log in</a>
+            <span class="muted small">By signing up you agree to our Terms.</span>
+          </div>
+        </form>
+      </div>
+    </main>
 
-          <p class="text-center mt-4">
-            Already have an account?
-            <NuxtLink to="/login" class="text-secondary font-weight-bold">Login here</NuxtLink>
-          </p>
-        </v-form>
-      </v-card>
-    </v-container>
-  </v-app>
+    <footer class="auth-footer">
+      <small>© {{ new Date().getFullYear() }} EduCode — Where learning becomes a game</small>
+    </footer>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useAuthSignup } from '@/composables/useAuthSignup'
-
-const email = ref('')
-const password = ref('')
-
-const { signup, loading, error, message } = useAuthSignup()
+import { useRouter } from '#app'
+import { useSupabase } from '~/composables/useSupabase'
 
 const router = useRouter()
-const navigateToLanding = () => router.push('/landing')
+const supabase = useSupabase()
+
+const username = ref('')
+const email = ref('')
+const password = ref('')
+const loading = ref(false)
+const error = ref('')
+const success = ref('')
+
+const goLanding = () => router.push('/index')
 
 const handleSignup = async () => {
-  if (!email.value || !password.value) return
-  await signup(email.value, password.value)
+  error.value = ''
+  success.value = ''
+  loading.value = true
+
+  try {
+    // Client-side sign up (so the client session & email flow are handled by Supabase)
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: email.value.trim(),
+      password: password.value,
+      options: {
+        emailRedirectTo: `${useRuntimeConfig().public.siteUrl || process.env.NUXT_PUBLIC_SITE_URL || ''}/confirm`
+      }
+    })
+
+    if (signUpError) {
+      error.value = signUpError.message || 'Signup failed'
+      return
+    }
+
+    // If Supabase returns user object (or even if email confirmation is required),
+    // call the server endpoint using the service key to create the profile row.
+    // If data.user is missing (e.g. confirmation required), Supabase sometimes returns null user.
+    // But signUp returns an id when available. We try to derive user id if present.
+    const userId = data?.user?.id ?? null
+
+    // If userId is available, call server to create profile; else schedule profile creation later.
+    if (userId) {
+      const createRes = await $fetch('/api/auth/create-profile', {
+        method: 'POST',
+        body: { userId, username: username.value.trim(), email: email.value.trim() }
+      }) as any
+
+      if (createRes?.error) {
+        // still consider signup success, but show message
+        success.value = 'Account created — please check your email. Profile creation had a problem.'
+      } else {
+        success.value = 'Account created — check your email for confirmation. Redirecting…'
+      }
+    } else {
+      // userId not available (confirmation flow). We'll still tell user to confirm email.
+      success.value = 'Account created — check your email for confirmation. Once you confirm, profile will be created automatically.'
+    }
+
+    // after a short pause, redirect to login page to sign in (or if you want automatically sign in,
+    // you'd need to handle the session and confirmation)
+    setTimeout(() => router.push('/login'), 1100)
+  } catch (err: any) {
+    error.value = err?.message || 'Server error'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
+
 <style scoped>
-.auth-container {
+/* reuse same base styles as login (Layout B) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
+
+.auth-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #6b21a8, #00e5ff);
-  padding: 24px;
-}
-.auth-card {
-  width: 100%;
-  max-width: 420px;
-  background: rgba(17, 15, 40, 0.95);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #5e17eb 0%, #0f6af5 45%, #07d6ff 100%);
+  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   color: #fff;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
 }
-.signup-logo {
-  width:350px;
-  margin-bottom: 20px;
-  cursor: pointer;
-  filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.6));
-  transition: transform 0.3s ease;
+
+.auth-header { display:flex; align-items:center; gap:14px; padding:20px 36px; }
+.logo { max-width:350px; cursor:pointer; }
+
+.auth-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr min(960px, 92%) 1fr;
+  align-items: start;
+  gap: 20px;
+  padding: 28px 0 60px;
 }
-.btn-primary {
-  background: linear-gradient(90deg, #6b21a8, #00e5ff);
-  color: #fff;
-  border-radius: 10px;
-  font-weight: 600;
-  text-transform: none;
+
+.title-block { grid-column: 2; text-align: center; margin-bottom: 18px; }
+.headline { font-size: 1.9rem; margin: 0; display:flex; justify-content:center; gap:10px; align-items:baseline; }
+.headline .grad-static { font-weight:800; font-size:1.9rem; background: linear-gradient(90deg,#9333ea,#00e5ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.headline .muted { color: rgba(255,255,255,0.9); font-weight:600; }
+.sub { color: rgba(255,255,255,0.8); margin-top:8px; font-size: .95rem; }
+
+.card {
+  grid-column: 2;
+  margin-top: 8px;
+  background: rgba(8,10,20,0.75);
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45), 0 0 80px rgba(0,229,255,0.06) inset;
+  border: 1px solid rgba(255,255,255,0.03);
+  position: relative;
 }
-a {
-  text-decoration: none;
+.card::after{ content: ""; position: absolute; inset: -6px; border-radius: 18px; background: linear-gradient(90deg,#9333ea, #00e5ff); opacity: 0.12; filter: blur(14px); z-index:-1; }
+
+.form { display: grid; gap: 14px; max-width: 520px; margin: 0 auto; }
+.field { display:flex; flex-direction:column; gap:8px; }
+.label { font-size:.85rem; color: rgba(255,255,255,0.75); font-weight:600; }
+
+.input-wrap { display:flex; align-items:center; gap:12px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; padding:10px 12px; border:1px solid rgba(255,255,255,0.06); box-shadow:0 6px 18px rgba(0,0,0,0.45), inset 0 0 18px rgba(0,229,255,0.02); }
+.icon { color: #7ff; opacity:0.95; display:inline-flex; align-items:center; justify-content:center; }
+.input-wrap input { background: transparent; border: 0; outline: none; color: #fff; font-size:1rem; width:100%; padding:6px 0; }
+.input-wrap:focus-within { box-shadow: 0 10px 30px rgba(0,229,255,0.06), inset 0 0 18px rgba(0,229,255,0.03); border-color: rgba(0,229,255,0.22); }
+
+.btn.primary { display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:12px 18px; border-radius:10px; width:100%; background: linear-gradient(90deg,#7b34ff,#00e5ff); color:white; font-weight:700; font-size:1rem; border:none; cursor:pointer; box-shadow:0 8px 30px rgba(0,229,255,0.18); transition: transform .14s ease, box-shadow .14s ease; }
+.btn.primary:disabled { opacity:0.7; cursor:not-allowed; }
+
+.error { color:#ff7a7a; background: rgba(255,122,122,0.06); padding:10px; border-radius:8px; font-size:.95rem; border:1px solid rgba(255,122,122,0.08); }
+.success { color:#bff3d6; background: rgba(98,255,180,0.03); padding:10px; border-radius:8px; font-size:.95rem; border:1px solid rgba(98,255,180,0.06); }
+
+.form-footer { display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
+.link { color:#dbe9ff; text-decoration:none; font-size:.9rem; }
+.muted.small { color: rgba(255,255,255,0.55); font-size: 0.8rem; }
+
+/* footer */
+.auth-footer { text-align:center; padding: 18px 0; color: rgba(255,255,255,0.6); font-size:.85rem; }
+
+@media (max-width: 720px) {
+  .auth-main { grid-template-columns: 1fr; padding: 40px 20px 60px; }
+  .title-block { text-align:left; margin-left:6px; }
+  .card { padding: 20px; border-radius: 12px; }
+  .headline { font-size: 1.5rem; }
+  .form { gap: 12px; }
 }
 </style>
