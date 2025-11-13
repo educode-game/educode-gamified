@@ -8,13 +8,15 @@ export default defineEventHandler(async (event) => {
 
   const { email, password, username } = body
 
-  // Create account (server-side). NOTE: server-side signUp with service key
-  // can be used, but client-side supabase.auth.signUp will be used in this bundle.
+  // 1️⃣ Create account with username stored in user_metadata
   const { data, error } = await client.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NUXT_PUBLIC_SITE_URL || useRuntimeConfig().public.siteUrl || ''}/confirm`
+      emailRedirectTo: `${process.env.NUXT_PUBLIC_SITE_URL}/confirm`,
+      data: {
+        username: username.trim()   // <-- USERNAME SAVED HERE
+      }
     }
   })
 
@@ -22,24 +24,9 @@ export default defineEventHandler(async (event) => {
     return { error: error?.message || "Signup failed." }
   }
 
-  const user = data.user
-
-  // Insert profile row (sync id)
-  await client.from('profiles').insert({
-    id: user.id,
-    username,
-    email,
-    xp_total: 0,
-    xp_weekly: 0,
-    level: 1,
-    diamonds: 0,
-    lives: 5,
-    hints: 0,
-    badge_title: null,
-    metadata: {},
-    joined_at: new Date().toISOString(),
-    last_life_generated_at: new Date().toISOString()
-  }).maybeSingle()
+  // 2️⃣ DO NOT INSERT INTO PROFILES
+  // The trigger InsertProfileOnSignup already creates:
+  // id, username, xp_total, level, lives, etc.
 
   return { success: true }
 })

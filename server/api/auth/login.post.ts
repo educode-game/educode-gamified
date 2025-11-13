@@ -1,6 +1,6 @@
 // /server/api/auth/login.post.ts
-import { defineEventHandler, readBody } from 'h3'
 import { createServiceSupabase } from '../../utils/supabaseServerClient'
+import { readBody } from 'h3'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -11,9 +11,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const client = createServiceSupabase()
+
   let emailToUse = identifier
 
-  // If user enters a USERNAME, convert it to email
+  // If username is used, convert to email
   if (!identifier.includes("@")) {
     const { data: userByUsername } = await client
       .from("profiles")
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event) => {
       .eq("username", identifier)
       .single()
 
-    if (!userByUsername?.email) {
+    if (!userByUsername) {
       return { error: "Invalid username or password." }
     }
 
@@ -35,7 +36,5 @@ export default defineEventHandler(async (event) => {
 
   if (error) return { error: error.message }
 
-  // Note: server signing in with service key DOES NOT set client session.
-  // We keep this endpoint for compatibility but the final client auth is done client-side.
   return { success: true }
 })

@@ -4,6 +4,7 @@
       <NuxtPage />
     </v-main>
 
+    <!-- Snackbar -->
     <v-snackbar
       v-model="snackbar"
       color="deep-purple-accent-2"
@@ -17,16 +18,31 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useRoute } from '#app'
+import { useRouter, useRoute } from '#app'
+import { useSupabase } from '@/composables/useSupabase'
 
+const router = useRouter()
+const route = useRoute()
+const supabase = useSupabase()
+
+// Snackbar
 const snackbar = ref(false)
 const snackbarMessage = ref('')
-const route = useRoute()
 
-/* snack on navigation */
+// --- FIXED AUTH LISTENER ---
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') {
+    router.push('/index')
+  }
+
+  if (event === 'SIGNED_IN') {
+    router.push('/dashboard')
+  }
+})
+
+// --- FIXED SNACKBAR WATCH ---
 watch(route, () => {
-  const routeName = typeof route.name === 'symbol' ? String(route.name) : route.name
-  snackbarMessage.value = `Navigated to ${routeName || route.path}`
+  snackbarMessage.value = `Navigated to ${route.path}`
   snackbar.value = true
 })
 </script>
@@ -40,6 +56,7 @@ body {
   margin: 0;
   font-family: "Poppins", sans-serif;
 }
+
 .v-application {
   background: transparent !important;
 }

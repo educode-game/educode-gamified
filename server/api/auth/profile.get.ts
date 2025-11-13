@@ -3,28 +3,35 @@ import { defineEventHandler, getHeader } from 'h3'
 import { createServiceSupabase, getUserFromToken } from '../../utils/supabaseServerClient'
 
 export default defineEventHandler(async (event) => {
-  const authHeader = getHeader(event, 'authorization')
-  if (!authHeader) return { profile: null }
+  const auth = getHeader(event, 'authorization')
+  if (!auth) return { profile: null }
 
-  const token = (authHeader || '').replace('Bearer ', '')
+  const token = auth.replace('Bearer ', '')
   const user = await getUserFromToken(token)
 
   if (!user) return { profile: null }
 
   const client = createServiceSupabase()
 
-  const { data: profileData, error } = await client
+  // Fetch matching profile
+  const { data: profile, error } = await client
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
   if (error) {
+    console.error("Profile fetch error:", error)
     return { profile: null }
   }
 
+  // Return both user + profile
   return {
-    profile: profileData,
-    user
+    profile,
+    user: {
+      id: user.id,
+      email: user.email,
+      username: user.user_metadata?.username || null
+    }
   }
 })

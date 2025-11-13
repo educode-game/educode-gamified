@@ -122,8 +122,22 @@ const handleLogin = async () => {
     }
 
     // success -> fetch user state and route to dashboard
-    await supabase.auth.getSession() // ensure the client initializes session
-    router.push('/dashboard')
+// Get fresh session AFTER login
+await supabase.auth.refreshSession()
+
+const { data: sessionData } = await supabase.auth.getSession()
+
+if (sessionData?.session) {
+  // Redirect to dashboard
+  router.push('/dashboard')
+} else {
+  console.warn("No session yet — forcing refresh in 200ms")
+  setTimeout(async () => {
+    const { data: s2 } = await supabase.auth.getSession()
+    if (s2.session) router.push('/dashboard')
+  }, 200)
+}
+
   } catch (err: any) {
     error.value = err?.message || 'Server error'
   } finally {
@@ -184,7 +198,7 @@ const handleLogin = async () => {
   font-weight: 800;
   font-size: 2.1rem;
   background: linear-gradient(90deg,#9333ea,#00e5ff);
-  -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .headline .muted { color: rgba(255,255,255,0.87); font-weight: 600; }

@@ -1,15 +1,20 @@
-// /app/middleware/redirect.global.ts
+// /app/middleware/auth.global.ts
 export default defineNuxtRouteMiddleware(async (to) => {
   const supabase = useSupabase()
   const { data } = await supabase.auth.getSession()
 
-  // If not logged in and trying to access root -> keep index
-  if (!data.session && (to.path === '/' || to.path === '/index')) {
-    return // allow /index
+  const isLoggedIn = !!data.session
+
+  const publicPages = ['/index', '/', '/login', '/signup']
+  const isPublic = publicPages.includes(to.path)
+
+  // 1) If NOT logged in → block private pages
+  if (!isLoggedIn && !isPublic) {
+    return navigateTo('/index')
   }
 
-  // If logged in and trying to access public pages, go to dashboard
-  if (data.session && ['/index', '/', '/login', '/signup'].includes(to.path)) {
+  // 2) If logged in → block public pages
+  if (isLoggedIn && isPublic) {
     return navigateTo('/dashboard')
   }
 })
