@@ -1,195 +1,374 @@
 <template>
-  <v-app>
-    <v-container class="dashboard-container py-10">
-      <v-row justify="center">
-        <v-col cols="12" md="8" lg="6">
-          <v-card class="dashboard-card pa-6" elevation="10">
-            <!-- Header -->
-            <div class="d-flex align-center justify-space-between mb-6">
-              <div class="d-flex align-center gap-3">
-                <v-avatar size="56" color="primary" class="bordered-avatar">
-                  <v-icon size="40" color="white">mdi-account</v-icon>
-                </v-avatar>
-                <div>
-                  <h2 class="text-h6 mb-0">{{ userName }}</h2>
-                  <p class="text-caption text-grey-lighten-1">{{ userEmail }}</p>
-                </div>
-              </div>
+  <div class="dashboard-page">
+    <!-- Navbar -->
+    <nav class="dashboard-navbar">
+      <div class="navbar-left" @click="router.push('/landing')">
+        <img src="/logo.png" alt="EduCode Logo" class="navbar-logo" />
+        <h2>EduCode</h2>
+      </div>
 
-              <v-btn
-                color="red-lighten-1"
-                variant="tonal"
-                @click="logout"
-                prepend-icon="mdi-logout"
-              >
-                Logout
-              </v-btn>
-            </div>
+      <div class="navbar-right">
+        <span class="welcome-text">Welcome, {{ profile?.username }}</span>
+        <v-btn class="logout-btn" @click="logout">Sign Out</v-btn>
+      </div>
+    </nav>
 
-            <!-- Stats -->
-            <v-row dense class="mb-6">
-              <v-col cols="6">
-                <v-card variant="flat" class="stat-card">
-                  <v-icon color="cyan-accent-2" class="mb-1">mdi-star-circle</v-icon>
-                  <h3 class="text-h6">{{ profile?.level ?? 1 }}</h3>
-                  <p class="text-caption">Level</p>
-                </v-card>
-              </v-col>
+    <!-- Dashboard Content -->
+    <div class="dashboard-grid">
+      <!-- Profile + XP -->
+      <div class="profile-xp-row">
+        <div class="dashboard-card profile-info-card">
+          <img src="/default-avatar.jpg" alt="Profile" class="avatar" />
+          <div>
+            <h3>{{ profile?.username }}</h3>
+            <p>{{ profile?.email }}</p>
+          </div>
+        </div>
 
-              <v-col cols="6">
-                <v-card variant="flat" class="stat-card">
-                  <v-icon color="amber-accent-3" class="mb-1">mdi-diamond-stone</v-icon>
-                  <h3 class="text-h6">{{ profile?.diamonds ?? 0 }}</h3>
-                  <p class="text-caption">Diamonds</p>
-                </v-card>
-              </v-col>
+        <div class="dashboard-card xp-card">
+          <div class="xp-header">
+            <h3>Experience Progress</h3>
+            <span>Level {{ profile?.level }}</span>
+          </div>
+          <div class="xp-bar">
+            <div class="xp-bar-fill" :style="{ width: xpPercentage + '%' }"></div>
+          </div>
+          <div class="xp-text">
+            <span>XP: {{ profile?.xp_total }}</span>
+            <span>Next Level: {{ nextLevelXp }}</span>
+          </div>
+        </div>
+      </div>
 
-              <v-col cols="6">
-                <v-card variant="flat" class="stat-card">
-                  <v-icon color="deep-purple-accent-2" class="mb-1">mdi-heart</v-icon>
-                  <h3 class="text-h6">{{ profile?.lives ?? 5 }}</h3>
-                  <p class="text-caption">Lives</p>
-                </v-card>
-              </v-col>
+      <!-- Stats Row -->
+      <div class="stats-row">
+        <div class="dashboard-card stat-card" v-for="stat in stats" :key="stat.label">
+          <i :class="stat.icon"></i>
+          <div>
+            <h4>{{ stat.value }}</h4>
+            <p>{{ stat.label }}</p>
+          </div>
+        </div>
+      </div>
 
-              <v-col cols="6">
-                <v-card variant="flat" class="stat-card">
-                  <v-icon color="blue-accent-2" class="mb-1">mdi-trophy</v-icon>
-                  <h3 class="text-h6">{{ profile?.xp_total ?? 0 }}</h3>
-                  <p class="text-caption">XP</p>
-                </v-card>
-              </v-col>
-            </v-row>
-
-            <!-- XP Progress -->
-            <div class="mb-6">
-              <v-progress-linear
-                :model-value="xpProgress"
-                color="blue-accent-2"
-                height="10"
-                rounded
-              ></v-progress-linear>
-              <div class="d-flex justify-space-between mt-1">
-                <span class="text-caption">XP: {{ profile?.xp_total ?? 0 }}</span>
-                <span class="text-caption">Next Level: {{ xpToNext }}</span>
-              </div>
-            </div>
-
-            <!-- Actions -->
-            <v-row dense>
-              <v-col cols="12" md="4">
-                <v-btn
-                  class="btn-primary w-100 py-5"
-                  prepend-icon="mdi-code-braces"
-                  @click="router.push('/playground')"
-                >
-                  Playground
-                </v-btn>
-              </v-col>
-
-              <v-col cols="12" md="4">
-                <v-btn
-                  class="btn-primary w-100 py-5"
-                  prepend-icon="mdi-sword-cross"
-                  @click="router.push('/worlds')"
-                >
-                  Worlds
-                </v-btn>
-              </v-col>
-
-              <v-col cols="12" md="4">
-                <v-btn
-                  class="btn-primary w-100 py-5"
-                  prepend-icon="mdi-crown"
-                  @click="router.push('/leaderboard')"
-                >
-                  Leaderboard
-                </v-btn>
-              </v-col>
-            </v-row>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
-  </v-app>
+      <!-- Actions Row -->
+      <div class="actions-row">
+        <div class="actions-card glow-animate">
+          <v-btn class="btn gradient" @click="router.push('/playground')">
+            <i class="ri-code-s-slash-line"></i> Playground
+          </v-btn>
+          <v-btn class="btn gradient" @click="router.push('/worlds')">
+            <i class="ri-gamepad-fill"></i> Worlds
+          </v-btn>
+          <v-btn class="btn gradient" @click="router.push('/leaderboard')">
+            <i class="ri-trophy-fill"></i> Leaderboard
+          </v-btn>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from '#app'
-import { useAuthUser } from '@/composables/useAuthUser'
-import { useGameProgress } from '@/composables/useGameProgress'
-import { useSupabase } from '@/composables/useSupabase'
 
 const router = useRouter()
-const { user, signOut, fetchUser } = useAuthUser()
-const { profile, fetchProfile } = useGameProgress()
-const supabase = useSupabase()
-
-const userName = computed(() => user.value?.email?.split('@')[0] || 'Player')
-const userEmail = computed(() => user.value?.email || 'unknown@email.com')
-
-const xpToNext = computed(() => {
-  const level = profile.value?.level ?? 1
-  const nextLevelXp = 200 * Math.pow(1.15, level)
-  return Math.round(nextLevelXp)
+const profile = ref({
+  username: 'Ragnarok',
+  email: 'ragnarokclassic41@gmail.com',
+  level: 1,
+  diamonds: 0,
+  lives: 5,
+  xp_total: 0
 })
 
-const xpProgress = computed(() => {
-  const xp = profile.value?.xp_total ?? 0
-  const next = xpToNext.value
-  const progress = Math.min(100, ((xp % next) / next) * 100)
-  return progress
-})
+const nextLevelXp = 230
+const xpPercentage = computed(() => (profile.value.xp_total / nextLevelXp) * 100)
 
-const logout = async () => {
-  await signOut()
-  router.push('/login')
+const stats = ref([
+  { label: 'Level', value: 1, icon: 'ri-bar-chart-box-fill' },
+  { label: 'Diamonds', value: 0, icon: 'ri-gem-fill' },
+  { label: 'Lives', value: 5, icon: 'ri-heart-3-fill' },
+  { label: 'XP', value: 0, icon: 'ri-flashlight-fill' }
+])
+
+const logout = () => {
+  // Supabase logout logic (to be added later)
 }
-
-onMounted(async () => {
-  await fetchUser()
-  const session = await supabase.auth.getSession()
-  const token = session.data.session?.access_token
-  if (token) {
-    await fetchProfile(token)
-  }
-})
 </script>
 
 <style scoped>
-.dashboard-container {
+@import url("https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css");
+
+/* === Background === */
+.dashboard-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #6b21a8, #00e5ff);
+  background: linear-gradient(135deg, #5e17eb, #007aff, #00e5ff);
+  font-family: "Poppins", sans-serif;
+  color: white;
+  padding-bottom: 60px;
+  overflow-x: hidden;
 }
 
+/* === Navbar === */
+.dashboard-navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: rgba(10, 10, 25, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 40px;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.25);
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.navbar-logo {
+  width: 48px;
+}
+
+.navbar-left h2 {
+  font-size: 1.5rem;
+  background: linear-gradient(90deg, #9333ea, #00e5ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logout-btn {
+  background: linear-gradient(90deg, #ff4d4d, #ff7575) !important;
+  color: white !important;
+  font-weight: 600;
+  border-radius: 8px;
+  text-transform: none;
+}
+
+/* === Dashboard Grid === */
+.dashboard-grid {
+  margin-top: 130px;
+  width: 90%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* === Cards === */
 .dashboard-card {
-  background: rgba(17, 15, 40, 0.95);
-  color: #fff;
+  background: rgba(10, 10, 25, 0.85);
   border-radius: 20px;
+  padding: 26px;
+  color: white;
+  box-shadow: 0 8px 30px rgba(0, 229, 255, 0.2);
   backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
-.bordered-avatar {
+.dashboard-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 35px rgba(0, 229, 255, 0.4);
+}
+
+/* === Profile + XP Row === */
+.profile-xp-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+}
+
+.profile-info-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar {
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
   border: 2px solid #00e5ff;
+  padding: 3px;
+}
+
+/* XP Progress */
+.xp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.xp-bar {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #9333ea, #00e5ff);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+  transition: width 0.4s ease;
+}
+
+.xp-text {
+  display: flex;
+  justify-content: space-between;
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+/* === Stats Row === */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.05);
   text-align: center;
-  padding: 12px 0;
-  border-radius: 10px;
+  padding: 28px;
 }
 
-.btn-primary {
-  background: linear-gradient(90deg, #6b21a8, #00e5ff);
-  color: #fff;
-  font-weight: 600;
-  border-radius: 10px;
-  text-transform: none;
-  transition: 0.2s ease-in-out;
+.stat-card i {
+  font-size: 2rem;
+  color: #00e5ff;
+  display: block;
+  margin-bottom: 10px;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
 }
-.btn-primary:hover {
-  filter: brightness(1.1);
+
+.stat-card h4 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.stat-card p {
+  color: #b5b5b5;
+  font-size: 0.95rem;
+}
+
+/* Fix for diamond icon */
+.ri-gem-fill {
+  color: #00e5ff;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+}
+
+/* === Actions Row === */
+.actions-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.actions-card {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+  max-width: 1150px;
+  background: rgba(10, 10, 25, 0.85);
+  border-radius: 20px;
+  padding: 32px 50px;
+  box-shadow: 0 8px 25px rgba(0, 229, 255, 0.25);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+/* Glow wave animation */
+.glow-animate::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(0, 229, 255, 0.2),
+    transparent
+  );
+  animation: glowMove 3s linear infinite;
+}
+
+@keyframes glowMove {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 50%;
+  }
+}
+
+/* Buttons */
+.btn {
+  flex: 1;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  text-transform: none !important;
+  padding: 16px 22px;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.25s ease;
+}
+
+.gradient {
+  background: linear-gradient(90deg, #9333ea, #00e5ff) !important;
+  color: white !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+}
+
+.btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.7);
+}
+
+/* === Responsive === */
+@media (max-width: 1024px) {
+  .profile-xp-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .actions-card {
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+  }
+
+  .btn {
+    width: 100%;
+  }
 }
 </style>
