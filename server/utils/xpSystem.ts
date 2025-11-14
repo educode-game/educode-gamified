@@ -1,52 +1,92 @@
 // /server/utils/xpSystem.ts
 
-/** 
- * BASE XP by level ranges
- */
-export const baseXPByLevel = [
-  { min: 1, max: 5, xp: 100 },
-  { min: 6, max: 10, xp: 150 },
-  { min: 11, max: 15, xp: 200 },
-  { min: 16, max: 20, xp: 300 },
-  { min: 21, max: 25, xp: 400 },
-  { min: 26, max: 30, xp: 500 },
-  { min: 31, max: 35, xp: 650 },
-  { min: 36, max: 40, xp: 800 },
-  { min: 41, max: 45, xp: 1000 },
-  { min: 46, max: 50, xp: 1200 }
-]
+// 📌 Base XP by level ranges
+export const XP_LEVEL_TABLE: { [key: number]: number } = {
+  1: 100,
+  2: 100,
+  3: 100,
+  4: 100,
+  5: 100,
 
-export function getBaseXP(level: number): number {
-  for (const row of baseXPByLevel) {
-    if (level >= row.min && level <= row.max) return row.xp
-  }
-  return 100
+  6: 150,
+  7: 150,
+  8: 150,
+  9: 150,
+  10: 150,
+
+  11: 200,
+  12: 200,
+  13: 200,
+  14: 200,
+  15: 200,
+
+  16: 300,
+  17: 300,
+  18: 300,
+  19: 300,
+  20: 300,
+
+  21: 400,
+  22: 400,
+  23: 400,
+  24: 400,
+  25: 400,
+
+  26: 500,
+  27: 500,
+  28: 500,
+  29: 500,
+  30: 500,
+
+  31: 650,
+  32: 650,
+  33: 650,
+  34: 650,
+  35: 650,
+
+  36: 800,
+  37: 800,
+  38: 800,
+  39: 800,
+  40: 800,
+
+  41: 1000,
+  42: 1000,
+  43: 1000,
+  44: 1000,
+  45: 1000,
+
+  46: 1200,
+  47: 1200,
+  48: 1200,
+  49: 1200,
+  50: 1200
+}
+
+// ⭐ Stars multipliers
+export const STAR_MULTIPLIER: Record<0 | 1 | 2 | 3, number> = {
+  3: 1.00,
+  2: 0.80,
+  1: 0.60,
+  0: 0.00
 }
 
 /**
- * Performance multipliers
+ * Calculate XP earned for completing a challenge.
  */
-export const performanceMultiplier: Record<number, number> = {
-  3: 1.0,
-  2: 0.8,
-  1: 0.6,
-  0: 0.0
+export function calculateXPEarned(level: number, stars: 0 | 1 | 2 | 3): number {
+  const baseXP = XP_LEVEL_TABLE[level] || 100
+  const multiplier = STAR_MULTIPLIER[stars] ?? 0
+  return Math.round(baseXP * multiplier)
 }
 
 /**
- * XP Required using smooth exponential curve:
- * XP_n = 200 × (1.15)^(n-1)
+ * Check if player should level up.
+ * Level-up rule:
+ *    Every 1000 XP = level up
+ *    (You can adjust this rule later)
  */
-export function getXPRequiredForLevel(level: number): number {
-  const raw = 200 * Math.pow(1.15, level - 1)
-  return Math.round(raw / 50) * 50
-}
-
-/**
- * FINAL XP CALCULATION
- */
-export function calculateChallengeXP(level: number, stars: number): number {
-  const base = getBaseXP(level)
-  const multiplier = performanceMultiplier[stars] ?? 0
-  return Math.floor(base * multiplier)
+export function checkLevelUp(totalXP: number, currentLevel: number): boolean {
+  const requiredXP = (currentLevel + 1) * 1000
+  return totalXP >= requiredXP
 }

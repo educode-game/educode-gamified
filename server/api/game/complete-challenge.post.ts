@@ -1,6 +1,6 @@
 import { readBody } from 'h3'
 import { createServiceSupabase } from '../../utils/supabaseServerClient'
-import { calculateChallengeXP, getXPRequiredForLevel } from '../../utils/xpSystem'
+import { calculateXPEarned, checkLevelUp } from '../../utils/xpSystem'
 
 export default defineEventHandler(async (event) => {
   const client = createServiceSupabase()
@@ -19,24 +19,21 @@ export default defineEventHandler(async (event) => {
     .eq('id', user.id)
     .single()
 
-  // XP
-  const xpEarned = calculateChallengeXP(profile.level, stars)
+  const xpEarned = calculateXPEarned(profile.level, stars)
   const newXP = profile.xp_total + xpEarned
 
-  // Level up
-  const requiredXP = getXPRequiredForLevel(profile.level)
-  const willLevelUp = newXP >= requiredXP
+  let newLevel = profile.level
+  if (checkLevelUp(newXP, profile.level)) newLevel += 1
 
-  const newLevel = willLevelUp ? profile.level + 1 : profile.level
+  await client
+    .from('profiles')
+    .update({
+      xp_total: newXP,
+      level: newLevel,
+      xp_weekly: profile.xp_weekly + xpEarned
+    })
+    .eq('id', user.id)
 
-  // Update profile
-  await client.from('profiles').update({
-    xp_total: newXP,
-    xp_weekly: profile.xp_weekly + xpEarned,
-    level: newLevel
-  }).eq('id', user.id)
-
-  // Save progress
   await client.from('user_progress').upsert({
     user_id: user.id,
     challenge_id,
