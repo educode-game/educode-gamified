@@ -2,59 +2,83 @@
   <div class="auth-page">
     <main class="auth-main">
       <div class="card">
-      <section class="title-block">
-              <img src="/logo.png" alt="EduCode" class="logo" @click="goLanding" />
-        <h2 class="headline">
-          <span class="grad-static">Create your</span>
-          <span class="muted">EduCode Account</span>
-        </h2>
-        <p class="sub">Choose a username you love — you'll use it to sign in or use email.</p>
-      </section>
+        <section class="title-block">
+          <img src="/logo.png" alt="EduCode" class="logo" @click="goLanding" />
+          <h2 class="headline">
+            <span class="grad-static">Create your</span>
+            <span class="muted">EduCode Account</span>
+          </h2>
+          <p class="sub">Choose a username you love — you'll use it to sign in or use email.</p>
+        </section>
+
         <form class="form" @submit.prevent="handleSignup">
-          
+          <!-- USERNAME -->
           <div class="field">
             <label class="label">Username</label>
             <div class="input-wrap">
               <span class="icon" aria-hidden>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="1.4"/>
                 </svg>
               </span>
-              <input v-model="username" type="text" placeholder="pick-a-username" required autocomplete="username" />
+              <input
+                v-model="username"
+                type="text"
+                placeholder="pick-a-username"
+                required
+                autocomplete="username"
+              />
             </div>
           </div>
 
+          <!-- EMAIL -->
           <div class="field">
             <label class="label">Email</label>
             <div class="input-wrap">
               <span class="icon" aria-hidden>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M3 8l9 6 9-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M3 8l9 6 9-6" stroke="currentColor" stroke-width="1.4"/>
                   <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.4"/>
                 </svg>
               </span>
-              <input v-model="email" type="email" placeholder="you@domain.com" required autocomplete="email" />
+              <input
+                v-model="email"
+                type="email"
+                placeholder="you@domain.com"
+                required
+                autocomplete="email"
+              />
             </div>
           </div>
 
+          <!-- PASSWORD -->
           <div class="field">
             <label class="label">Password</label>
             <div class="input-wrap">
               <span class="icon" aria-hidden>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <rect x="3" y="11" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.4" />
-                  <path d="M7 11V8a5 5 0 0110 0v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M7 11V8a5 5 0 0110 0v3" stroke="currentColor" stroke-width="1.4"/>
                 </svg>
               </span>
-              <input v-model="password" type="password" placeholder="Choose a strong password" required autocomplete="new-password" />
+              <input
+                v-model="password"
+                type="password"
+                placeholder="Choose a strong password"
+                required
+                autocomplete="new-password"
+              />
             </div>
           </div>
 
+          <!-- ERROR / SUCCESS -->
           <div v-if="error" class="error">{{ error }}</div>
           <div v-if="success" class="success">{{ success }}</div>
 
+          <!-- BUTTON -->
           <button class="btn primary" :disabled="loading">
-            <span v-if="!loading">Sign Up</span><span v-else>Creating…</span>
+            <span v-if="!loading">Sign Up</span>
+            <span v-else>Creating…</span>
           </button>
 
           <div class="form-footer">
@@ -74,11 +98,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from '#app'
-import { useSupabase } from '~/composables/useSupabase'
 
 const router = useRouter()
-const supabase = useSupabase()
 
+/* -----------------------------
+   FORM STATE
+------------------------------ */
 const username = ref('')
 const email = ref('')
 const password = ref('')
@@ -86,61 +111,54 @@ const loading = ref(false)
 const error = ref('')
 const success = ref('')
 
+/* Navigation */
 const goLanding = () => router.push('/index')
 
+/* -----------------------------
+   RESPONSE TYPE (fixes errors)
+------------------------------ */
+interface SignupResponse {
+  error?: string
+  success?: boolean
+  message?: string
+}
+
+/* -----------------------------
+   SIGNUP HANDLER
+------------------------------ */
 const handleSignup = async () => {
   error.value = ''
   success.value = ''
   loading.value = true
 
   try {
-    // Client-side sign up (so the client session & email flow are handled by Supabase)
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: email.value.trim(),
-      password: password.value,
-      options: {
-        emailRedirectTo: `${useRuntimeConfig().public.siteUrl || process.env.NUXT_PUBLIC_SITE_URL || ''}/confirm`
+    const cleanUsername = username.value.trim().toLowerCase()
+
+    const res = await $fetch<SignupResponse>('/api/auth/signup', {
+      method: 'POST',
+      body: {
+        email: email.value.trim(),
+        password: password.value,
+        username: cleanUsername
       }
     })
 
-    if (signUpError) {
-      error.value = signUpError.message || 'Signup failed'
+    if (res.error) {
+      error.value = res.error
       return
     }
 
-    // If Supabase returns user object (or even if email confirmation is required),
-    // call the server endpoint using the service key to create the profile row.
-    // If data.user is missing (e.g. confirmation required), Supabase sometimes returns null user.
-    // But signUp returns an id when available. We try to derive user id if present.
-    const userId = data?.user?.id ?? null
+    success.value = res.message || 'Signup successful!'
 
-    // If userId is available, call server to create profile; else schedule profile creation later.
-    if (userId) {
-      const createRes = await $fetch('/api/auth/create-profile', {
-        method: 'POST',
-        body: { userId, username: username.value.trim(), email: email.value.trim() }
-      }) as any
+    setTimeout(() => router.push('/login'), 1200)
 
-      if (createRes?.error) {
-        // still consider signup success, but show message
-        success.value = 'Account created — please check your email. Profile creation had a problem.'
-      } else {
-        success.value = 'Account created — check your email for confirmation. Redirecting…'
-      }
-    } else {
-      // userId not available (confirmation flow). We'll still tell user to confirm email.
-      success.value = 'Account created — check your email for confirmation. Once you confirm, profile will be created automatically.'
-    }
-
-    // after a short pause, redirect to login page to sign in (or if you want automatically sign in,
-    // you'd need to handle the session and confirmation)
-    setTimeout(() => router.push('/login'), 1100)
   } catch (err: any) {
     error.value = err?.message || 'Server error'
   } finally {
     loading.value = false
   }
 }
+
 </script>
 
 
@@ -171,7 +189,7 @@ const handleSignup = async () => {
 
 .title-block { grid-column: 2; text-align: center; margin-bottom: 18px; }
 .headline { font-size: 1.9rem; margin: 0; display:flex; justify-content:center; gap:10px; align-items:baseline; }
-.headline .grad-static { font-weight:800; font-size:1.9rem; background: linear-gradient(90deg,#9333ea,#00e5ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.headline .grad-static { font-weight:800; font-size:1.9rem; background: linear-gradient(90deg,#9333ea,#00e5ff); background-clip:text; -webkit-text-fill-color:transparent; }
 .headline .muted { color: rgba(255,255,255,0.9); font-weight:600; }
 .sub { color: rgba(255,255,255,0.8); margin-top:8px; font-size: .95rem; }
 
