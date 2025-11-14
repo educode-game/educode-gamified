@@ -1,37 +1,24 @@
-// /server/api/auth/profile.get.ts
-import { defineEventHandler, getHeader } from 'h3'
-import { createServiceSupabase, getUserFromToken } from '../../utils/supabaseServerClient'
+import { defineEventHandler } from 'h3'
+import { createServiceSupabase } from '../../utils/supabaseServerClient'
 
 export default defineEventHandler(async (event) => {
-  const auth = getHeader(event, 'authorization')
-  if (!auth) return { profile: null }
-
-  const token = auth.replace('Bearer ', '')
-  const user = await getUserFromToken(token)
-
-  if (!user) return { profile: null }
-
   const client = createServiceSupabase()
 
-  // Fetch matching profile
+  const authHeader = event.node.req.headers['authorization']
+  if (!authHeader) return { error: 'Missing auth' }
+
+  const token = authHeader.replace('Bearer ', '')
+
+  const { data: { user }, error: userErr } = await client.auth.getUser(token)
+  if (userErr || !user) return { error: 'Invalid token' }
+
   const { data: profile, error } = await client
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
-  if (error) {
-    console.error("Profile fetch error:", error)
-    return { profile: null }
-  }
+  if (error) return { error: error.message }
 
-  // Return both user + profile
-  return {
-    profile,
-    user: {
-      id: user.id,
-      email: user.email,
-      username: user.user_metadata?.username || null
-    }
-  }
+  return { profile }
 })
