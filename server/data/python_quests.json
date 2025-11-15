@@ -1,0 +1,227 @@
+[
+  {
+    "questId": "py_01",
+    "world": "python",
+    "node": 1,
+    "difficulty": "easy",
+    "topic": "Python Intro",
+    "objective": "Print exactly: Hello EduCode!",
+    "example": { "input": "", "output": "Hello EduCode!" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "", "output": "Hello EduCode!" },
+      { "input": "", "output": "Hello EduCode!" },
+      { "input": "", "output": "Hello EduCode!" }
+    ]
+  },
+  {
+    "questId": "py_02",
+    "world": "python",
+    "node": 2,
+    "difficulty": "easy",
+    "topic": "Python Syntax / Indentation",
+    "objective": "Print the sum of 2 and 3.",
+    "example": { "input": "", "output": "5" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "", "output": "5" },
+      { "input": "", "output": "5" },
+      { "input": "", "output": "5" }
+    ]
+  },
+  {
+    "questId": "py_03",
+    "world": "python",
+    "node": 3,
+    "difficulty": "easy",
+    "topic": "Python Variables",
+    "objective": "Assign x=10 and y=4 and print 'x y sum' (e.g., '10 4 14').",
+    "example": { "input": "", "output": "10 4 14" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "", "output": "10 4 14" },
+      { "input": "", "output": "10 4 14" },
+      { "input": "", "output": "10 4 14" }
+    ]
+  },
+  {
+    "questId": "py_04",
+    "world": "python",
+    "node": 4,
+    "difficulty": "medium",
+    "topic": "Python Data Types",
+    "objective": "Read a float from stdin and print it rounded to 2 decimal places.",
+    "example": { "input": "3.14159", "output": "3.14" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "3.14159", "output": "3.14" },
+      { "input": "2.5", "output": "2.50" },
+      { "input": "0", "output": "0.00" }
+    ]
+  },
+  {
+    "questId": "py_05",
+    "world": "python",
+    "node": 5,
+    "difficulty": "medium",
+    "topic": "Python Strings",
+    "objective": "Read a string and print it reversed.",
+    "example": { "input": "EduCode", "output": "edoCudE" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "EduCode", "output": "edoCudE" },
+      { "input": "abc", "output": "cba" },
+      { "input": "", "output": "" }
+    ]
+  },
+  {
+    "questId": "py_06",
+    "world": "python",
+    "node": 6,
+    "difficulty": "medium",
+    "topic": "Python Booleans",
+    "objective": "Read two integers and print True if first > second, else False.",
+    "example": { "input": "5 3", "output": "True" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "5 3", "output": "True" },
+      { "input": "2 4", "output": "False" },
+      { "input": "3 3", "output": "False" }
+    ]
+  },
+  {
+    "questId": "py_07",
+    "world": "python",
+    "node": 7,
+    "difficulty": "medium",
+    "topic": "Python Operators",
+    "objective": "Read two ints and print the integer division result (floor division).",
+    "example": { "input": "7 2", "output": "3" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "7 2", "output": "3" },
+      { "input": "10 3", "output": "3" },
+      { "input": "5 5", "output": "1" }
+    ]
+  },
+  {
+    "questId": "py_08",
+    "world": "python",
+    "node": 8,
+    "difficulty": "medium",
+    "topic": "Python If/Else",
+    "objective": "Read an integer and print 'Positive', 'Negative', or 'Zero'.",
+    "example": { "input": "-1", "output": "Negative" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "-1", "output": "Negative" },
+      { "input": "0", "output": "Zero" },
+      { "input": "9", "output": "Positive" }
+    ]
+  },
+  {
+    "questId": "py_09",
+    "world": "python",
+    "node": 9,
+    "difficulty": "medium",
+    "topic": "Python Lists",
+    "objective": "Read n then n integers; print the list in reverse order as a Python list literal.",
+    "example": { "input": "4 1 2 3 4", "output": "[4, 3, 2, 1]" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "4 1 2 3 4", "output": "[4, 3, 2, 1]" },
+      { "input": "3 5 6 7", "output": "[7, 6, 5]" },
+      { "input": "1 42", "output": "[42]" }
+    ]
+  },
+  {
+    "questId": "py_10",
+    "world": "python",
+    "node": 10,
+    "difficulty": "hard",
+    "topic": "Python For Loop",
+    "objective": "Read n and print the sum of first n natural numbers.",
+    "example": { "input": "5", "output": "15" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "5", "output": "15" },
+      { "input": "1", "output": "1" },
+      { "input": "10", "output": "55" }
+    ]
+  },
+  {
+    "questId": "py_11",
+    "world": "python",
+    "node": 11,
+    "difficulty": "hard",
+    "topic": "Python While Loop",
+    "objective": "Read integers until a zero is found; print how many odd numbers were read (exclude zero).",
+    "example": { "input": "1 2 3 4 0", "output": "2" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "1 2 3 4 0", "output": "2" },
+      { "input": "0", "output": "0" },
+      { "input": "5 5 2 0", "output": "2" }
+    ]
+  },
+  {
+    "questId": "py_12",
+    "world": "python",
+    "node": 12,
+    "difficulty": "hard",
+    "topic": "Python Functions",
+    "objective": "Define a function fib(n) that returns the n-th Fibonacci number (0-indexed). Read n and print fib(n). n<=20.",
+    "example": { "input": "6", "output": "8" },
+    "starterCode": "# Write your code here\n\ndef fib(n):\n    # implement\n    return 0\n\nif __name__ == '__main__':\n    pass\n",
+    "testCases": [
+      { "input": "6", "output": "8" },
+      { "input": "0", "output": "0" },
+      { "input": "1", "output": "1" }
+    ]
+  },
+  {
+    "questId": "py_13",
+    "world": "python",
+    "node": 13,
+    "difficulty": "hard",
+    "topic": "Python Dictionaries",
+    "objective": "Read n then n words; print each word and its frequency sorted by word ascending (one per line: 'word count').",
+    "example": { "input": "5 a b a c b", "output": "a 2\nb 2\nc 1" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "5 a b a c b", "output": "a 2\nb 2\nc 1" },
+      { "input": "3 x x y", "output": "x 2\ny 1" },
+      { "input": "1 hello", "output": "hello 1" }
+    ]
+  },
+  {
+    "questId": "py_14",
+    "world": "python",
+    "node": 14,
+    "difficulty": "hard",
+    "topic": "Python Sets / Tuples",
+    "objective": "Read a line of space-separated integers and print the number of unique values.",
+    "example": { "input": "1 2 2 3", "output": "3" },
+    "starterCode": "# Write your code here\n",
+    "testCases": [
+      { "input": "1 2 2 3", "output": "3" },
+      { "input": "5 5 5 5", "output": "1" },
+      { "input": "0 1 2 3", "output": "4" }
+    ]
+  },
+  {
+    "questId": "py_15",
+    "world": "python",
+    "node": 15,
+    "difficulty": "hard",
+    "topic": "Python Recursion / Algorithm",
+    "objective": "Read n and print the number of ways to climb n steps taking 1 or 2 steps at a time (fibonacci-like). n<=30.",
+    "example": { "input": "4", "output": "5" },
+    "starterCode": "# Write your code here\n\ndef ways(n):\n    # implement\n    return 0\n\nif __name__ == '__main__':\n    pass\n",
+    "testCases": [
+      { "input": "4", "output": "5" },
+      { "input": "1", "output": "1" },
+      { "input": "10", "output": "89" }
+    ]
+  }
+]
