@@ -1,8 +1,8 @@
 <template>
   <div class="toolbar">
 
-    <div class="lang-container">
-
+    <!-- LANGUAGE DROPDOWN (hidden in game mode) -->
+    <div v-if="!disableLang" class="lang-container">
       <select v-model="languageLocal" class="lang-select">
         <option value="python">Python</option>
         <option value="cpp">C++</option>
@@ -22,20 +22,34 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, watch } from "vue"
 
 const props = defineProps({
-  modelValue: String,
-  running: Boolean
+  modelValue: { type: String, default: "python" },
+  running: Boolean,
+  disableLang: { type: Boolean, default: false }   // 🔥 IMPORTANT
 })
 
 const emit = defineEmits(["update:language", "run", "save"])
 
+// local state
 const languageLocal = ref(props.modelValue)
 
-// sync upward
-watch(languageLocal, (v) => emit("update:language", v))
+// watch local dropdown → emit upward ONLY if lang is enabled
+watch(languageLocal, (v) => {
+  if (!props.disableLang) emit("update:language", v)
+})
+
+// if parent changes language → sync the dropdown
+watch(
+  () => props.modelValue,
+  (v) => {
+    if (v !== languageLocal.value) {
+      languageLocal.value = v
+    }
+  }
+)
 </script>
 
 <style scoped>
@@ -51,12 +65,6 @@ watch(languageLocal, (v) => emit("update:language", v))
   gap: 4px;
 }
 
-.lang-label {
-  font-size: 0.8rem;
-  color: rgba(255,255,255,0.7);
-  font-weight: 600;
-}
-
 .lang-select {
   background: rgba(20,20,35,0.85);
   border: 1px solid rgba(0,229,255,0.3);
@@ -67,7 +75,6 @@ watch(languageLocal, (v) => emit("update:language", v))
   font-weight: 600;
   cursor: pointer;
 }
-
 .lang-select option {
   background: #0e0e1a;
   color: white;
@@ -94,8 +101,5 @@ watch(languageLocal, (v) => emit("update:language", v))
   padding: 10px 16px;
   font-weight: 700;
   cursor: pointer;
-}
-.btn-save:hover {
-  background: rgba(0,229,255,0.15);
 }
 </style>

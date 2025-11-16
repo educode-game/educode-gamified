@@ -1,4 +1,3 @@
-// /app/composables/useGameProgress.ts
 import axios from 'axios'
 import { ref } from 'vue'
 
@@ -16,16 +15,31 @@ export const useGameProgress = () => {
   const profile = ref<Profile | null>(null)
   const loading = ref(false)
 
-  const fetchProfile = async (token?: string): Promise<void> => {
+  const fetchProfile = async (): Promise<void> => {
     loading.value = true
     try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
-      const { data } = await axios.get('/api/auth/profile', { headers })
+      const { data } = await axios.get('/api/auth/profile')
       profile.value = data.profile ?? null
     } finally {
       loading.value = false
     }
   }
 
-  return { profile, fetchProfile, loading }
+  const addXp = async (xp: number) => {
+    if (xp <= 0) return
+
+    loading.value = true
+    try {
+      const { data } = await axios.post('/api/auth/update-xp', {
+        xp_gain: xp
+      })
+      
+      // update local profile
+      profile.value = data.profile
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { profile, fetchProfile, addXp, loading }
 }

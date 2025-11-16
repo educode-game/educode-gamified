@@ -1,5 +1,7 @@
 import { runCodeInJudge0 } from "../../utils/judge0";
 import { langToJudge0, EduCodeWorld } from "../../utils/langMap";
+import { getDifficultyMultiplier } from "../../utils/difficulty";
+import { scoreOutput } from "../../utils/scoring";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -21,34 +23,43 @@ export default defineEventHandler(async (event) => {
   const quest = questList.find((q: any) => q.questId === questId);
 
   if (!quest) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: "Quest not found",
-    });
+    throw createError({ statusCode: 404, statusMessage: "Quest not found" });
   }
 
-  // Run through Judge0
+  // Run code via Judge0
   const result = await runCodeInJudge0(langId, code);
 
-  // Extract outputs
   const stdout = result.stdout || "";
   const stderr = result.stderr || "";
   const compileError = result.compile_output || "";
-  const judgeMessage = result.message || "";
+  const status = result.status?.description || "";
 
-  const status = result.status?.description || "Unknown";
+  const hasError = compileError || stderr || status !== "Accepted";
 
-  // Combine all errors
-  const finalError =
-    compileError ||
-    stderr ||
-    (status !== "Accepted" ? status + ": " + judgeMessage : "");
+  let stars = 0;
+  let xp = 0;
+
+  if (!hasError) {
+    // Score output
+    stars = scoreOutput(stdout, quest.example.output);
+
+    // Compute XP
+    const multiplier = getDifficultyMultiplier(quest.node);
+    const baseXP = 50;
+
+    xp = Math.floor(baseXP * multiplier * stars);
+  }
 
   return {
     ok: true,
     output: stdout.trim(),
-    error: finalError.trim(),
+    error: (compileError || stderr)?.trim() || "",
     status,
-    raw: result, // optional debug
+
+    // NEW
+    stars,
+    xp,
+
+    raw: result // optional for debugging
   };
 });

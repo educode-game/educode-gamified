@@ -1,34 +1,85 @@
 <template>
   <div class="map-page">
+    <!-- MAP BACKGROUND -->
     <img :src="mapImage" class="map-background" />
 
-    <!-- TITLE -->
-    <div class="map-title">
-      {{ worldName }}
-    </div>
+    <!-- WORLD TITLE -->
+    <div class="map-title">{{ worldName }}</div>
 
-    <!-- CHALLENGE DOTS -->
+    <!-- 15 NODES -->
     <div
-      v-for="point in points"
-      :key="point.id"
+      v-for="node in nodes"
+      :key="node.id"
       class="challenge-node"
-      :style="{ top: point.y + 'px', left: point.x + 'px' }"
-      @click="openChallenge(point.id)"
-    ></div>
+      :class="{
+        locked: !progress.unlocked_nodes.includes(node.id),
+        completed: progress.completed_nodes.includes(node.id)
+      }"
+      :style="{ top: node.y + 'px', left: node.x + 'px' }"
+      @click="openNode(node.id)"
+    >
+      <span>{{ node.id }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from '#app'
-import { ref, computed } from 'vue'
+import { useSupabase } from '~/composables/useSupabase'
 
+// 👇 Supabase client
+const supabase = useSupabase()
 const route = useRoute()
 const router = useRouter()
 
-// Accepted slugs
 const slug = route.params.world as string
+const userId = ref<string | null>(null)
 
-// Map image selection
+// FETCH USER SESSION
+onMounted(async () => {
+  const session = (await supabase.auth.getSession())?.data?.session
+  userId.value = session?.user?.id ?? null
+
+  if (userId.value) {
+    await loadProgress()
+  }
+})
+
+// DEFAULT PROGRESSION STATE
+const progress = ref({
+  completed_nodes: [] as number[],
+  unlocked_nodes: [1] as number[]
+})
+
+// GET PROGRESS FROM API
+const loadProgress = async () => {
+  const res = await $fetch('/api/worlds/progress', {
+    params: { world: slug }
+  })
+  progress.value = res || { completed_nodes: [], unlocked_nodes: [1] }
+}
+
+// STATIC NODE COORDINATES (15 nodes)
+const nodes = [
+  { id: 1, x: 200, y: 250 },
+  { id: 2, x: 360, y: 330 },
+  { id: 3, x: 520, y: 400 },
+  { id: 4, x: 660, y: 320 },
+  { id: 5, x: 820, y: 260 },
+  { id: 6, x: 950, y: 360 },
+  { id: 7, x: 1100, y: 440 },
+  { id: 8, x: 950, y: 530 },
+  { id: 9, x: 760, y: 580 },
+  { id: 10, x: 560, y: 520 },
+  { id: 11, x: 380, y: 450 },
+  { id: 12, x: 240, y: 540 },
+  { id: 13, x: 120, y: 470 },
+  { id: 14, x: 260, y: 380 },
+  { id: 15, x: 420, y: 300 }
+]
+
+// WORLD IMAGES
 const mapImage = computed(() => {
   switch (slug) {
     case 'namespace-necropolis':
@@ -42,28 +93,24 @@ const mapImage = computed(() => {
   }
 })
 
-// Display readable title
+// WORLD NAMES
 const worldName = computed(() => {
   switch (slug) {
-    case 'namespace-necropolis': return 'Namespace Necropolis'
-    case 'snakebyte-sanctum': return 'Snakebyte Sanctum'
-    case 'classpath-crypt': return 'Classpath Crypt'
-    default: return 'Unknown World'
+    case 'namespace-necropolis':
+      return 'Namespace Necropolis'
+    case 'snakebyte-sanctum':
+      return 'Snakebyte Sanctum'
+    case 'classpath-crypt':
+      return 'Classpath Crypt'
+    default:
+      return 'Unknown World'
   }
 })
 
-// Challenge node placeholders (you can adjust later)
-// These positions are arbitrary — replace later with real coordinates.
-const points = ref([
-  { id: 1, x: 200, y: 300 },
-  { id: 2, x: 350, y: 500 },
-  { id: 3, x: 600, y: 450 },
-  { id: 4, x: 800, y: 300 }
-])
-
-// When clicking a node
-const openChallenge = (challengeId: number) => {
-  router.push(`/worlds/${slug}/${challengeId}`)
+// CLICK NODE
+const openNode = (id: number) => {
+  if (!progress.value.unlocked_nodes.includes(id)) return
+  router.push(`/worlds/${slug}/${id}`)
 }
 </script>
 
@@ -75,15 +122,12 @@ const openChallenge = (challengeId: number) => {
   overflow: hidden;
 }
 
-/* Background map */
 .map-background {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  pointer-events: none;
 }
 
-/* Map title */
 .map-title {
   position: absolute;
   top: 30px;
@@ -91,24 +135,44 @@ const openChallenge = (challengeId: number) => {
   text-align: center;
   font-size: 38px;
   font-weight: bold;
-  color: #fff;
+  color: white;
   text-shadow: 0 4px 10px rgba(0,0,0,0.6);
 }
 
-/* Clickable challenge nodes */
+/* Node style */
 .challenge-node {
   position: absolute;
-  width: 28px;
-  height: 28px;
-  background: yellow;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  border: 3px solid #fff;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(255,255,0,0.8);
-  transition: transform 0.2s ease;
+  background: rgba(255,255,255,0.15);
+  border: 3px solid white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  cursor:pointer;
+  transition: 0.25s ease;
+  font-weight: bold;
+  font-size: 16px;
+  color: white;
 }
 
-.challenge-node:hover {
-  transform: scale(1.3);
+/* COMPLETED NODE */
+.challenge-node.completed {
+  background: linear-gradient(90deg, #22c55e, #0ea5e9);
+  box-shadow: 0 0 12px rgba(0,255,180,0.7);
+}
+
+/* LOCKED NODE */
+.challenge-node.locked {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.25);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Hover only if unlocked */
+.challenge-node:not(.locked):hover {
+  transform: scale(1.25);
 }
 </style>
