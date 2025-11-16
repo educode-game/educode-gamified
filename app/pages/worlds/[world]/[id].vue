@@ -20,7 +20,7 @@
             <p><strong>Output:</strong> {{ quest.example.output }}</p>
           </div>
 
-          <!-- Editor -->
+          <!-- EDITOR -->
           <Editor
             v-model="code"
             :language="language"
@@ -28,23 +28,24 @@
             :key="editorKey"
           />
 
-          <!-- RunToolbar -->
+          <!-- Run + Save -->
           <RunToolbar
             :modelValue="language"
-            :running="running"
             :disableLang="true"
+            :running="running"
             @run="runCode"
             @save="saveQuestCode"
           />
 
-          <!-- Output -->
+          <!-- OUTPUT -->
           <OutputConsole :text="output" :error="error" />
-
         </div>
 
-        <div v-else class="loading-state">Loading quest…</div>
+        <div v-else class="loading-state">
+          Loading quest…
+        </div>
 
-        <!-- Level Up Modal -->
+        <!-- LEVEL UP MODAL -->
         <LevelUpModal
           v-if="showLevelUp"
           :level="earnedLevel"
@@ -64,31 +65,31 @@ import Editor from "~/components/Editor.vue"
 import RunToolbar from "~/components/RunToolbar.vue"
 import OutputConsole from "~/components/OutputConsole.vue"
 import LevelUpModal from "~/components/LevelUpModal.vue"
+
 import { useRoute } from "vue-router"
 import { useGameProgress } from "~/composables/useGameProgress"
-import { useSupabase } from "~/composables/useSupabase"
 
 // XP composable
-const { addXp, profile } = useGameProgress()
-const supabase = useSupabase()
+const { addXp } = useGameProgress()
 
-// Route params
+// ROUTING
 const route = useRoute()
 const worldSlug = route.params.world as string
 const node = Number(route.params.id)
 
-// World → language mapping (snakecase slugs)
-const worldToLang = {
-  "classpath-crypt": "java",
+// 🔥 WORLD → LANGUAGE MAP
+const worldToLanguage: Record<string, "python" | "cpp" | "java"> = {
+  "snakebyte-sanctum": "python",
   "namespace-necropolis": "cpp",
-  "snakebyte-sanctum": "python"
-} as const
+  "classpath-crypt": "java",
+}
 
-const language = ref<"python" | "cpp" | "java">(
-  (worldToLang as any)[worldSlug] ?? "python"
-)
+// final mapped language
+const mappedWorld =
+  worldToLanguage[worldSlug] ?? "python"
 
-// Quest state
+// reactive state
+const language = ref<"python" | "cpp" | "java">(mappedWorld)
 const quest = ref<any>(null)
 const code = ref("")
 const output = ref("")
@@ -96,7 +97,7 @@ const error = ref("")
 const running = ref(false)
 const editorKey = ref(0)
 
-// Level-up modal
+// modal state
 const showLevelUp = ref(false)
 const earnedLevel = ref(0)
 
@@ -105,19 +106,31 @@ function onLevelUp(level: number) {
   showLevelUp.value = true
 }
 
-// Fetch quest
+// ============================
+// 🔥 FETCH QUEST DATA
+// ============================
 onMounted(async () => {
-  const data = await $fetch("/api/worlds/quest", {
-    params: { world: worldSlug, node }
-  })
+  try {
+    const data = await $fetch("/api/worlds/quest", {
+      params: {
+        world: mappedWorld,
+        node,
+      },
+    })
 
-  quest.value = data
-  code.value = data.starterCode
-  language.value = data.world
-  editorKey.value++
+    quest.value = data
+    code.value = data.starterCode
+    language.value = mappedWorld
+    editorKey.value++
+
+  } catch (err) {
+    console.error("Quest load failed:", err)
+  }
 })
 
-// Run Code
+// ============================
+// 🔥 RUN CODE
+// ============================
 const runCode = async () => {
   running.value = true
   output.value = ""
@@ -128,41 +141,31 @@ const runCode = async () => {
       method: "POST",
       body: {
         questId: quest.value.questId,
-        world: quest.value.world,
-        code: code.value
-      }
+        world: mappedWorld,
+        code: code.value,
+      },
     })
 
     output.value = res.output
     error.value = res.error
 
-    // XP reward
-    if (res.xp > 0) {
+    if (res.xp && res.xp > 0) {
       await addXp(res.xp)
     }
 
-    // 🔐 Unlock next node if correct
-if (res.stars > 0 && profile.value?.id) {
-  await $fetch("/api/worlds/unlock", {
-    method: "POST",
-    body: {
-      userId: profile.value.id,
-      world: worldSlug,
-      completedNode: node
-    }
-  })
-}
-
   } catch (e: any) {
-    error.value = e?.data?.message || "Execution failed."
+    error.value =
+      e?.data?.message || "Execution failed."
   }
 
   running.value = false
 }
 
-// Save button
+// ============================
+// SAVE PROGRESS BUTTON
+// ============================
 const saveQuestCode = () => {
-  window.alert("Saved progress!")
+  window.alert("Progress saved!")
 }
 </script>
 
