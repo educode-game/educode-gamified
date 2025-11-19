@@ -1,31 +1,35 @@
-import cpp from '../../data/cpp_quests.json'
-import java from '../../data/java_quests.json'
-import python from '../../data/python_quests.json'
+// /server/api/worlds/quest.get.ts
+import { loadQuestFile } from '../../utils/loadQuestFile'
+import { getQuery } from 'h3'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const world = query.world as string
   const node = Number(query.node)
 
-  const db: Record<string, any[]> = {
-    cpp,
-    java,
-    python
-  }
-
-  if (!db[world]) {
+  if (!world || isNaN(node)) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid world'
+      message: 'Missing or invalid world/node'
     })
   }
 
-  const quest = db[world].find(q => q.node === node)
+  let dataset: any[]
+  try {
+    dataset = loadQuestFile(world)
+  } catch (err: any) {
+    throw createError({
+      statusCode: 400,
+      message: err?.message || 'Quest file error'
+    })
+  }
+
+  const quest = dataset.find((q: any) => q.node === node)
 
   if (!quest) {
     throw createError({
       statusCode: 404,
-      statusMessage: 'Quest not found'
+      message: 'Quest not found'
     })
   }
 

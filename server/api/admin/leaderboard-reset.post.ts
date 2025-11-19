@@ -1,39 +1,44 @@
-// /server/api/admin/leaderboard-reset.post.ts
-import { createServiceSupabase } from '../../utils/supabaseServerClient'
+// server/api/admin/leaderboard-reset.post.ts
+import { supabaseServer } from "../../utils/supabaseServerClient"
 
 export default defineEventHandler(async (event) => {
-  const adminSecret = getRequestHeader(event, 'x-admin-secret')
-  const config = useRuntimeConfig()
-  const baseUrl = String(config.public.baseUrl || '')
+  // Optional: You may restrict only admins
+  // const user = await getUserFromEvent(event)
+  // if (!user || user.role !== 'admin') throw createError({ ... })
 
-  if (adminSecret !== baseUrl.split('//')[1]) {
-    throw createError({ statusCode: 403, message: 'Forbidden' })
+  try {
+    // RESET ALL XP
+    const { error: xpErr } = await supabaseServer
+      .from("profiles")
+      .update({ xp_total: 0 })
+      .neq("id", "") // ensures update applies to all rows
+
+    if (xpErr) {
+      console.error("Error updating profiles", xpErr)
+      throw createError({ statusCode: 500, statusMessage: "Profile reset failed" })
+    }
+
+    // RESET PROGRESS TABLE
+    const { error: progErr } = await supabaseServer
+      .from("world_progress")
+      .update({
+        completed_nodes: [],
+        unlocked_nodes: [1]
+      })
+      .neq("user_id", "") // apply to all users
+
+    if (progErr) {
+      console.error("Error resetting progress:", progErr)
+      throw createError({ statusCode: 500, statusMessage: "Progress reset failed" })
+    }
+
+    return { ok: true, message: "Leaderboard reset completed." }
+
+  } catch (err: any) {
+    console.error("Reset error:", err)
+    throw createError({
+      statusCode: 500,
+      statusMessage: err?.message ?? "Unexpected reset error"
+    })
   }
-
-  const client = createServiceSupabase()
-  const { data: profiles } = await client
-    .from('profiles')
-    .select('id, xp_weekly, xp_total')
-    .order('xp_weekly', { ascending: false })
-
-  if (!profiles) return { success: true }
-
-  const weekStart = new Date()
-  weekStart.setUTCDate(weekStart.getUTCDate() - ((weekStart.getUTCDay() + 6) % 7))
-  const weekEnd = new Date(weekStart)
-  weekEnd.setUTCDate(weekStart.getUTCDate() + 6)
-
-  const payload = profiles.map((p, idx) => ({
-    user_id: p.id,
-    xp_weekly: p.xp_weekly,
-    rank: idx + 1,
-    week_start: weekStart.toISOString().slice(0, 10),
-    week_end: weekEnd.toISOString().slice(0, 10)
-  }))
-
-  await client.from('leaderboards').insert(payload)
-  await client.from('leaderboard_history').insert({ data: payload })
-  await client.from('profiles').update({ xp_weekly: 0 })
-
-  return { success: true }
 })

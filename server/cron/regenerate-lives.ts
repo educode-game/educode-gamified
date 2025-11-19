@@ -1,8 +1,8 @@
-import { createServiceSupabase } from '../utils/supabaseServerClient'
+import { supabaseServer } from '../utils/supabaseServerClient'
+
 
 export default defineEventHandler(async () => {
-  const client = createServiceSupabase()
-
+const client = supabaseServer
   const { data: users } = await client
     .from('profiles')
     .select('id, lives, last_life_generated_at')

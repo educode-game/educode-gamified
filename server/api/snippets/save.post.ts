@@ -1,8 +1,10 @@
 import { readBody } from 'h3'
-import { createServiceSupabase } from '../../utils/supabaseServerClient'
+import { supabaseServer } from '../../utils/supabaseServerClient'
+
 
 export default defineEventHandler(async (event) => {
-  const client = createServiceSupabase()
+const client = supabaseServer
+
 
   const authHeader = event.node.req.headers['authorization']
   if (!authHeader) return { error: 'Missing token' }

@@ -1,9 +1,10 @@
 // /server/api/leaderboard/update.post.ts
 import { readBody } from 'h3'
-import { createServiceSupabase } from '../../utils/supabaseServerClient'
+import { supabaseServer } from '../../utils/supabaseServerClient'
+
 
 export default defineEventHandler(async (event) => {
-  const client = createServiceSupabase()
+  const client = supabaseServer
   const body = await readBody(event)
 
   const { user_id, xp_weekly } = body

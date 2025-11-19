@@ -15,9 +15,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
     supabaseUrl: process.env.SUPABASE_URL,
+    
     public: {
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY,
+      RAPIDAPI_KEY: process.env.RAPIDAPI_KEY,
+      RAPIDAPI_HOST: process.env.RAPIDAPI_HOST,
       baseUrl: process.env.BASE_URL || 'http://localhost:3000'
     }
   },

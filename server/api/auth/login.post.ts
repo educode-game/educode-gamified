@@ -1,5 +1,5 @@
 // /server/api/auth/login.post.ts
-import { createServiceSupabase } from '../../utils/supabaseServerClient'
+import { supabaseServer } from '../../utils/supabaseServerClient'
 import { readBody } from 'h3'
 
 export default defineEventHandler(async (event) => {
@@ -10,7 +10,8 @@ export default defineEventHandler(async (event) => {
     return { error: "Email/Username and password required." }
   }
 
-  const client = createServiceSupabase()
+  const client = supabaseServer
+
 
   let emailToUse = identifier
 

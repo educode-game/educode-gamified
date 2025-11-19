@@ -1,5 +1,6 @@
 // /server/api/challenges/submit.post.ts
-import { createServiceSupabase, getUserFromToken } from '../../utils/supabaseServerClient'
+import { supabaseServer, getUserFromEvent } from '../../utils/supabaseServerClient'
+import { readBody, getRequestHeader } from 'h3'
 
 interface Challenge {
   id: string
@@ -54,18 +55,27 @@ export default defineEventHandler(async (event) => {
     output: string
   }>(event)
 
-  const token = (getRequestHeader(event, 'authorization') || '').replace('Bearer ', '')
-  const user = await getUserFromToken(token)
+  // 🔥 NEW AUTH METHOD
+  const user = await getUserFromEvent(event)
   if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
-  const client = createServiceSupabase()
-  const { data: ch } = await client.from('challenges').select('*').eq('id', body.challenge_id).maybeSingle()
+  const client = supabaseServer
+
+  const { data: ch } = await client
+    .from('challenges')
+    .select('*')
+    .eq('id', body.challenge_id)
+    .maybeSingle()
+
   if (!ch) throw createError({ statusCode: 404, message: 'Challenge not found' })
 
   const challenge = ch as Challenge
+
   const stars = computeStars(body.output, challenge.expected_output)
   const earned_xp =
-    stars > 0 ? Math.round(challenge.xp_base * (stars === 3 ? 1.0 : stars === 2 ? 0.8 : 0.6)) : 0
+    stars > 0
+      ? Math.round(challenge.xp_base * (stars === 3 ? 1.0 : stars === 2 ? 0.8 : 0.6))
+      : 0
 
   const { data: existing } = await client
     .from('user_progress')
@@ -85,7 +95,9 @@ export default defineEventHandler(async (event) => {
         earned_xp: Math.max(existing.earned_xp ?? 0, earned_xp),
         attempts,
         last_attempt_output: body.output,
-        completed_at: completed ? new Date().toISOString() : existing.completed_at
+        completed_at: completed
+          ? new Date().toISOString()
+          : existing.completed_at,
       })
       .match({ id: existing.id })
   } else {
@@ -97,11 +109,16 @@ export default defineEventHandler(async (event) => {
       earned_xp,
       attempts,
       last_attempt_output: body.output,
-      completed_at: completed ? new Date().toISOString() : null
+      completed_at: completed ? new Date().toISOString() : null,
     })
   }
 
-  const { data: prof } = await client.from('profiles').select('*').eq('id', user.id).maybeSingle()
+  const { data: prof } = await client
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle()
+
   if (!prof) throw createError({ statusCode: 404, message: 'Profile not found' })
   const profile = prof as Profile
 
@@ -140,6 +157,6 @@ export default defineEventHandler(async (event) => {
     stars,
     earned_xp,
     diamonds_awarded,
-    level_up
+    level_up,
   }
 })

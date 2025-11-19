@@ -1,5 +1,10 @@
-const JUDGE0_URL =
-  "https://ce.judge0.com/submissions?base64_encoded=false&wait=true";
+// server/utils/judge0.ts
+/**
+ * Judge0 runner via RapidAPI (judge0-ce.p.rapidapi.com)
+ * Make sure RAPIDAPI_KEY is set in your environment (.env.local)
+ */
+
+const JUDGE0_URL = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true";
 
 export interface Judge0Result {
   stdout?: string | null;
@@ -18,22 +23,33 @@ export async function runCodeInJudge0(
   input: string = ""
 ): Promise<Judge0Result> {
   try {
+    if (!process.env.RAPIDAPI_KEY) {
+      console.error("RAPIDAPI_KEY is not set in environment")
+      throw createError({ statusCode: 500, statusMessage: "Judge0 configuration missing" })
+    }
+
     const response = await $fetch(JUDGE0_URL, {
       method: "POST",
+      headers: {
+        "X-RapidAPI-Key": process.env.RAPIDAPI_KEY,
+        "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+        "Content-Type": "application/json"
+      },
       body: {
         language_id: languageId,
         source_code: code,
         stdin: input,
-        redirect_stderr_to_stdout: false,
+        // redirect_stderr_to_stdout: false // Judge0 provider handles fields differently; leave default
       },
-    });
+      // set a reasonable timeout for the fetch (optional; Nitro has its own)
+    })
 
-    return response as Judge0Result;
-  } catch (err) {
-    console.error("Judge0 error:", err);
+    return response as Judge0Result
+  } catch (err: any) {
+    console.error("Judge0 error:", err)
     throw createError({
       statusCode: 500,
-      statusMessage: "Judge0 execution failed",
-    });
+      statusMessage: "Judge0 execution failed"
+    })
   }
 }

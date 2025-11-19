@@ -27,8 +27,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from '#app'
 import { useSupabase } from '~/composables/useSupabase'
+import { authFetch } from '~/utils/authFetch'
 
-// 👇 Supabase client
+/**
+ * Strongly-typed progress shape so TypeScript knows the properties exist.
+ */
+interface WorldProgress {
+  completed_nodes: number[]
+  unlocked_nodes: number[]
+}
+
+// Supabase + router
 const supabase = useSupabase()
 const route = useRoute()
 const router = useRouter()
@@ -36,31 +45,43 @@ const router = useRouter()
 const slug = route.params.world as string
 const userId = ref<string | null>(null)
 
-// FETCH USER SESSION
+// progress is a Ref<WorldProgress>
+const progress = ref<WorldProgress>({
+  completed_nodes: [],
+  unlocked_nodes: [1]
+})
+
+// Fetch session + progress
 onMounted(async () => {
-  const session = (await supabase.auth.getSession())?.data?.session
-  userId.value = session?.user?.id ?? null
+  const { data } = await supabase.auth.getSession()
 
-  if (userId.value) {
-    await loadProgress()
+  if (!data?.session) {
+    console.warn("Not logged in — cannot load progress")
+    return
   }
+
+  userId.value = data.session.user.id
+  await loadProgress()
 })
 
-// DEFAULT PROGRESSION STATE
-const progress = ref({
-  completed_nodes: [] as number[],
-  unlocked_nodes: [1] as number[]
-})
 
-// GET PROGRESS FROM API
+/**
+ * Load progress from backend and ensure it matches WorldProgress shape.
+ */
 const loadProgress = async () => {
-  const res = await $fetch('/api/worlds/progress', {
-    params: { world: slug }
-  })
-  progress.value = res || { completed_nodes: [], unlocked_nodes: [1] }
+  try {
+    const res = await authFetch('/api/worlds/progress', {
+      params: { world: slug }
+    })
+    progress.value = res || { completed_nodes: [], unlocked_nodes: [1] }
+  } catch (err) {
+    console.error("Progress load failed:", err)
+    progress.value = { completed_nodes: [], unlocked_nodes: [1] }
+  }
 }
 
-// STATIC NODE COORDINATES (15 nodes)
+
+// STATIC NODE COORDINATES
 const nodes = [
   { id: 1, x: 200, y: 250 },
   { id: 2, x: 360, y: 330 },
@@ -79,7 +100,7 @@ const nodes = [
   { id: 15, x: 420, y: 300 }
 ]
 
-// WORLD IMAGES
+// MAP IMAGE
 const mapImage = computed(() => {
   switch (slug) {
     case 'namespace-necropolis':
@@ -93,7 +114,7 @@ const mapImage = computed(() => {
   }
 })
 
-// WORLD NAMES
+// WORLD NAME
 const worldName = computed(() => {
   switch (slug) {
     case 'namespace-necropolis':
@@ -107,7 +128,6 @@ const worldName = computed(() => {
   }
 })
 
-// CLICK NODE
 const openNode = (id: number) => {
   if (!progress.value.unlocked_nodes.includes(id)) return
   router.push(`/worlds/${slug}/${id}`)
@@ -139,7 +159,6 @@ const openNode = (id: number) => {
   text-shadow: 0 4px 10px rgba(0,0,0,0.6);
 }
 
-/* Node style */
 .challenge-node {
   position: absolute;
   width: 46px;
@@ -157,13 +176,11 @@ const openNode = (id: number) => {
   color: white;
 }
 
-/* COMPLETED NODE */
 .challenge-node.completed {
   background: linear-gradient(90deg, #22c55e, #0ea5e9);
   box-shadow: 0 0 12px rgba(0,255,180,0.7);
 }
 
-/* LOCKED NODE */
 .challenge-node.locked {
   background: rgba(255,255,255,0.15);
   border-color: rgba(255,255,255,0.25);
@@ -171,7 +188,6 @@ const openNode = (id: number) => {
   cursor: not-allowed;
 }
 
-/* Hover only if unlocked */
 .challenge-node:not(.locked):hover {
   transform: scale(1.25);
 }
