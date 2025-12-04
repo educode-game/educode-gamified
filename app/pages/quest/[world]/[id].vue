@@ -71,15 +71,15 @@ import QuestResultModal from "@/components/QuestResultModal.vue"
 import { useRunner } from "@/composables/useRunner"
 import { useSupabase } from "@/composables/useSupabase"
 
-/* ---------------- TYPES ---------------- */
+
 interface RunResult {
   stdout?: string | null
   stderr?: string | null
   compile_output?: string | null
+  message?: string | null
   status?: { id: number; description: string } | null
 }
 
-/* ---------------- ROUTE + BASE STATE ---------------- */
 const route = useRoute()
 const world = String(route.params.world)
 const id = Number(route.params.id)
@@ -96,7 +96,6 @@ const submitting = ref(false)
 
 const runError = computed(() => error.value)
 
-/* ---------------- QUEST RESULT ---------------- */
 const resultOpen = ref(false)
 const lastResult = ref({
   stars: 0,
@@ -105,22 +104,36 @@ const lastResult = ref({
   diamonds_awarded: 0
 })
 
-/* ---------------- OUTPUT FORMATTER ---------------- */
+
+// CLEAN OUTPUT FN
+const normalizeResult = (result: RunResult): string => {
+  if (!result) return "⚠ No response received."
+
+  if (result.stdout && result.stdout.trim()) return result.stdout.trim()
+  if (result.message && result.message.trim()) return result.message.trim() // Java sometimes uses message
+  if (result.stderr && result.stderr.trim()) return `❌ Runtime Error:\n${result.stderr.trim()}`
+  if (result.compile_output && result.compile_output.trim()) return `⚠ Compilation Error:\n${result.compile_output.trim()}`
+
+  return "⚠ Code executed but produced no output."
+}
+
+// FINAL TEXT SHOWN IN UI
 const formattedOutput = computed(() => {
-  if (!output.value) return ""
+  const result = output.value
 
-  const result = output.value as unknown as RunResult
+  if (!result) return ""
 
-  if (typeof output.value === "string") return output.value
-
-  if (result.stdout) return result.stdout.trim()
+  if (typeof result === "string") return result
+  if (result.stdout && result.stdout.trim() !== "") return result.stdout.trim()
   if (result.stderr) return `❌ Runtime Error:\n${result.stderr}`
-  if (result.compile_output) return `⚠️ Compilation Error:\n${result.compile_output}`
+  if (result.compile_output) return `⚠ Compilation Error:\n${result.compile_output}`
 
-  return "⚠️ Code executed but produced no output."
+  return "⚠ Code executed but produced no output."
 })
 
-/* ---------------- LOAD QUEST DATA ---------------- */
+
+
+// LOAD QUEST JSON
 onMounted(async () => {
   try {
     const resp = await axios.get(`/data/${world}_quests.json`)
@@ -128,7 +141,7 @@ onMounted(async () => {
 
     if (!found) throw new Error("Quest not found")
 
-    language.value = world === "cpp" ? "cpp" : world === "java" ? "java" : "python"
+    language.value = world
     code.value = found.starterCode || ""
 
     challenge.value = {
@@ -145,13 +158,16 @@ onMounted(async () => {
   }
 })
 
-/* ---------------- RUN CODE ---------------- */
+
+// RUN CODE
 const runCode = async () => {
   const sampleInput = challenge.value?.testCases?.[0]?.input ?? ""
   await run(language.value, code.value, sampleInput)
 }
 
-/* ---------------- SUBMIT / VALIDATE ---------------- */
+
+
+// SUBMIT / VALIDATE
 const submitCode = async () => {
   submitting.value = true
 
@@ -160,9 +176,11 @@ const submitCode = async () => {
 
     for (const test of challenge.value.testCases) {
       await run(language.value, code.value, test.input ?? "")
-      const result = output.value as unknown as RunResult
 
-      if (result.stdout?.trim() === String(test.output).trim()) passed++
+      const result = output.value as RunResult
+      const cleaned = normalizeResult(result)
+
+      if (cleaned === String(test.output).trim()) passed++
     }
 
     if (passed !== challenge.value.testCases.length) {
@@ -191,7 +209,6 @@ const submitCode = async () => {
   submitting.value = false
 }
 
-/* ---------------- HINTS ---------------- */
 const buyHint = (n: number) => {
   alert(`Hint #${n} coming soon 🔍`)
 }
