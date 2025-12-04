@@ -168,46 +168,79 @@ const runCode = async () => {
 
 
 // SUBMIT / VALIDATE
+/* ---------------- SUBMIT & SCORING ---------------- */
 const submitCode = async () => {
   submitting.value = true
 
   try {
+    const cases = challenge.value.testCases || []
     let passed = 0
+    let attempts = 0
 
-    for (const test of challenge.value.testCases) {
+    for (const test of cases) {
+      attempts++
       await run(language.value, code.value, test.input ?? "")
 
       const result = output.value as RunResult
-      const cleaned = normalizeResult(result)
+      const cleaned = result?.stdout?.trim() || ""
+      const expected = String(test.output).trim()
 
-      if (cleaned === String(test.output).trim()) passed++
+      if (cleaned === expected) passed++
     }
 
-    if (passed !== challenge.value.testCases.length) {
-      output.value = `⚠ ${passed}/${challenge.value.testCases.length} tests passed. Try again!`
+    // ---------------- Result Decision ----------------
+    const total = cases.length
+
+    if (passed !== total) {
+      output.value = `⚠ ${passed}/${total} tests passed.\nTry again!`
+      submitting.value = false
       return
     }
 
-    // SAVE SUCCESS
+    // ---------------- Scoring Rules ----------------
+    let stars = 1
+    let xpEarned = 0
+
+    if (passed === total) {
+      stars = attempts === total ? 3 : 2  // perfect first try = 3 stars
+      xpEarned = stars === 3 ? challenge.value.xp_base : Math.floor(challenge.value.xp_base / 2)
+    }
+
+    // ---------------- Save to Backend ----------------
     const { data: sessionData } = await supabase.auth.getSession()
     const token = sessionData?.session?.access_token
 
-    const res = await axios.post(
+    const saveResponse = await axios.post(
       "/api/worlds/quest-submit",
-      { world_code: world, node_id: id, code: code.value },
-      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      {
+        world_code: world,
+        node_id: id,
+        stars,
+        xp: xpEarned,
+        code: code.value,
+      },
+      token ? { headers: { Authorization: `Bearer ${token}` }} : {}
     )
 
-    lastResult.value = res.data
+    // ---------------- Update UI ----------------
+    lastResult.value = {
+      stars,
+      xp: xpEarned,
+      level_up: saveResponse.data?.level_up ?? false,
+      diamonds_awarded: saveResponse.data?.diamonds_awarded ?? 0
+    }
+
     resultOpen.value = true
-    output.value = `🎉 All test cases passed!`
+    output.value = `🎉 All tests passed successfully!\n⭐ Stars Earned: ${stars}\n✨ XP: +${xpEarned}`
 
   } catch (err) {
-    console.error(err)
+    console.error("❌ Submit failed:", err)
+    output.value = "❌ Submission error. Try again."
   }
 
   submitting.value = false
 }
+
 
 const buyHint = (n: number) => {
   alert(`Hint #${n} coming soon 🔍`)
