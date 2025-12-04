@@ -3,8 +3,11 @@
  * Judge0 runner via RapidAPI (judge0-ce.p.rapidapi.com)
  * Make sure RAPIDAPI_KEY is set in your environment (.env.local)
  */
+// /server/utils/judge0.ts
+import { createError } from 'h3'   // ⬅️ add this
 
 const JUDGE0_URL = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true";
+
 
 export interface Judge0Result {
   stdout?: string | null;

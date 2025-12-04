@@ -1,28 +1,34 @@
-// /app/composables/useRunner.ts
-import axios from 'axios'
-import { ref } from 'vue'
+import { ref } from "vue"
+import { useApi } from "./useApi"
 
 export const useRunner = () => {
-  const output = ref<string>('')
+  const { apiFetch } = useApi()
+  const output = ref("")
   const running = ref(false)
-  const error = ref<string>('')
+  const error = ref("")
 
-  const run = async (language: string, code: string): Promise<void> => {
+  const run = async (language: string, code: string, input = "") => {
     running.value = true
-    output.value = ''
-    error.value = ''
+    output.value = ""
+    error.value = ""
+
     try {
-      const { data } = await axios.post('/api/run', { language, code })
-      // normalize common responses
-      if (data?.run?.output) output.value = String(data.run.output)
-      else if (data?.output) output.value = String(data.output)
-      else output.value = JSON.stringify(data)
+      const res = await apiFetch<any>("/api/run", {
+        method: "POST",
+        body: { language, code, input }
+      })
+
+      output.value =
+        res.stdout ||
+        res.compile_output ||
+        res.stderr ||
+        JSON.stringify(res)
     } catch (e: any) {
-      error.value = e?.response?.data?.error || e?.message || String(e)
+      error.value = e.message || "Run failed"
     } finally {
       running.value = false
     }
   }
 
-  return { output, run, running, error }
+  return { output, running, run, error }
 }

@@ -1,6 +1,6 @@
-import { ref } from 'vue'
-import { useAuthUser } from './useAuthUser'
-import { useSupabase } from './useSupabase'   // ✅ add this line
+import { ref } from "vue"
+import { useSupabase } from "./useSupabase"
+import { useAuthUser } from "./useAuthUser"
 
 export const useAuthLogin = () => {
   const supabase = useSupabase()
@@ -8,15 +8,18 @@ export const useAuthLogin = () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string) => {
     loading.value = true
     error.value = null
     try {
-      const { error: err } = await supabase.auth.signInWithPassword({ email, password })
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email, password
+      })
       if (err) throw err
+
       await fetchUser()
-    } catch (e: unknown) {
-      error.value = e instanceof Error ? e.message : String(e)
+    } catch (e: any) {
+      error.value = e.message ?? "Login failed"
     } finally {
       loading.value = false
     }

@@ -1,50 +1,59 @@
 <template>
-  <div class="worlds-page" :style="{ backgroundImage: 'url(/worlds-bg.png)' }">
+  <v-app>
+    <Navbar />
 
-    <div class="selector-wrapper">
+    <div
+      class="worlds-page"
+      :style="{ backgroundImage: 'url(/worlds-bg.png)' }"
+    >
+      <div class="selector-wrapper">
 
-      <h1 class="title">Select Your World</h1>
+        <h1 class="title">Select Your World</h1>
 
-      <div class="world-list">
+        <div class="world-list">
 
-        <!-- WORLD 1 -->
-        <div class="world-card">
-          <img src="/Dungeon-NameSpace.png" class="world-img" />
-          <button class="play-btn" @click="go('namespace-necropolis')">
-            <img src="/buttonPlay.png" class="play-img" />
-          </button>
-        </div>
+          <!-- WORLD 1 -->
+          <div class="world-card">
+            <img src="/cpp_Adventure_Dungeon.png" class="world-img" alt="C++ World" />
+            <button class="play-btn" @click="go('cpp-adventure')">
+              <img src="/buttonPlay.png" class="play-img" alt="Play Button" />
+            </button>
+          </div>
 
-        <!-- WORLD 2 -->
-        <div class="world-card">
-          <img src="/Dungeon-SnakeSanctum.png" class="world-img" />
-          <button class="play-btn" @click="go('snakebyte-sanctum')">
-            <img src="/buttonPlay.png" class="play-img" />
-          </button>
-        </div>
+          <!-- WORLD 2 -->
+          <div class="world-card">
+            <img src="/Python_Adventure_Dungeon.png" class="world-img" alt="Python World" />
+            <button class="play-btn" @click="go('python-adventure')">
+              <img src="/buttonPlay.png" class="play-img" alt="Play Button" />
+            </button>
+          </div>
 
-        <!-- WORLD 3 -->
-        <div class="world-card">
-          <img src="/Dungeon-ClasspathCrypt.png" class="world-img" />
-          <button class="play-btn" @click="go('classpath-crypt')">
-            <img src="/buttonPlay.png" class="play-img" />
-          </button>
+          <!-- WORLD 3 -->
+          <div class="world-card">
+            <img src="/Java_Adventure_Dungeon.png" class="world-img" alt="Java World" />
+            <button class="play-btn" @click="go('java-adventure')">
+              <img src="/buttonPlay.png" class="play-img" alt="Play Button" />
+            </button>
+          </div>
+
         </div>
 
       </div>
-
     </div>
-
-  </div>
+  </v-app>
 </template>
 
 <script setup lang="ts">
+import Navbar from "@/components/Navbar.vue"
+import { useRouter } from "#imports"
+
 const router = useRouter()
 
 const go = (slug: string) => {
-  router.push(`/worlds/${slug}`)
+  router.push(`/worlds/${encodeURIComponent(slug)}`)
 }
 </script>
+
 
 <style scoped>
 .worlds-page {
@@ -54,7 +63,7 @@ const go = (slug: string) => {
   background-position: center;
   display: flex;
   justify-content: center;
-  padding-top: 80px;
+  padding-top: 140px; /* extra padding for navbar */
 }
 
 .selector-wrapper {
@@ -65,12 +74,13 @@ const go = (slug: string) => {
 .title {
   font-size: 40px;
   margin-bottom: 50px;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
 
 .world-list {
   display: flex;
   justify-content: center;
-  gap: 60px;
+  gap: 80px;
 }
 
 .world-card {
@@ -80,22 +90,23 @@ const go = (slug: string) => {
 }
 
 .world-img {
-  width: 280px;
+  width: 300px;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.45));
 }
 
 .play-btn {
-  margin-top: 10px;
+  margin-top: 16px;
   background: none;
   border: none;
   cursor: pointer;
 }
 
 .play-img {
-  width: 140px;
+  width: 160px;
+  transition: transform 0.2s;
 }
 
-h3 {
-  color: #fff;
-  margin-top: 10px;
+.play-img:hover {
+  transform: scale(1.05);
 }
 </style>

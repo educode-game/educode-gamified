@@ -5,7 +5,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const isLoggedIn = !!data.session
 
-  const publicPages = ['/index', '/', '/login', '/signup']
+  const publicPages = ['/', '/index', '/login', '/signup', '/reset', '/reset-confirm', '/confirm']
   const isPublic = publicPages.includes(to.path)
 
   // 1) If NOT logged in → block private pages

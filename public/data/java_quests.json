@@ -1,0 +1,227 @@
+ [
+  {
+    "questId": "java_01",
+    "world": "java",
+    "node": 1,
+    "difficulty": "easy",
+    "topic": "Java Intro",
+    "objective": "Write a Java program that prints: Hello EduCode!",
+    "example": { "input": "", "output": "Hello EduCode!" },
+    "starterCode": "public class Main {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
+    "testCases": [
+      { "input": "", "output": "Hello EduCode!" },
+      { "input": "", "output": "Hello EduCode!" },
+      { "input": "", "output": "Hello EduCode!" }
+    ]
+  },
+  {
+    "questId": "java_02",
+    "world": "java",
+    "node": 2,
+    "difficulty": "easy",
+    "topic": "Java Get Started / Syntax",
+    "objective": "Print the sum of 8 and 12 as a single integer.",
+    "example": { "input": "", "output": "20" },
+    "starterCode": "public class Main {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
+    "testCases": [
+      { "input": "", "output": "20" },
+      { "input": "", "output": "20" },
+      { "input": "", "output": "20" }
+    ]
+  },
+  {
+    "questId": "java_03",
+    "world": "java",
+    "node": 3,
+    "difficulty": "easy",
+    "topic": "Java Syntax / Output formatting",
+    "objective": "Print two lines:\nFirst: Java\nSecond: EduCode",
+    "example": { "input": "", "output": "Java\nEduCode" },
+    "starterCode": "public class Main {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
+    "testCases": [
+      { "input": "", "output": "Java\nEduCode" },
+      { "input": "", "output": "Java\nEduCode" },
+      { "input": "", "output": "Java\nEduCode" }
+    ]
+  },
+  {
+    "questId": "java_04",
+    "world": "java",
+    "node": 4,
+    "difficulty": "medium",
+    "topic": "Java Variables",
+    "objective": "Declare int a=4 and b=6, print 'a b sum' with spaces (e.g., '4 6 10').",
+    "example": { "input": "", "output": "4 6 10" },
+    "starterCode": "public class Main {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
+    "testCases": [
+      { "input": "", "output": "4 6 10" },
+      { "input": "", "output": "4 6 10" },
+      { "input": "", "output": "4 6 10" }
+    ]
+  },
+  {
+    "questId": "java_05",
+    "world": "java",
+    "node": 5,
+    "difficulty": "medium",
+    "topic": "Java Data Types / Casting",
+    "objective": "Print result of 9 divided by 4 as a floating point number with one decimal (2.2).",
+    "example": { "input": "", "output": "2.2" },
+    "starterCode": "public class Main {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
+    "testCases": [
+      { "input": "", "output": "2.2" },
+      { "input": "", "output": "2.2" },
+      { "input": "", "output": "2.2" }
+    ]
+  },
+  {
+    "questId": "java_06",
+    "world": "java",
+    "node": 6,
+    "difficulty": "medium",
+    "topic": "Java Strings",
+    "objective": "Read a single word from stdin and print its length.",
+    "example": { "input": "EduCode", "output": "7" },
+    "starterCode": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Read input and print length\n    }\n}",
+    "testCases": [
+      { "input": "EduCode", "output": "7" },
+      { "input": "Hello", "output": "5" },
+      { "input": "abc", "output": "3" }
+    ]
+  },
+  {
+    "questId": "java_07",
+    "world": "java",
+    "node": 7,
+    "difficulty": "medium",
+    "topic": "Java Operators",
+    "objective": "Read two integers and print their product.",
+    "example": { "input": "6 7", "output": "42" },
+    "starterCode": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Read and compute product\n    }\n}",
+    "testCases": [
+      { "input": "6 7", "output": "42" },
+      { "input": "0 5", "output": "0" },
+      { "input": "-2 4", "output": "-8" }
+    ]
+  },
+  {
+    "questId": "java_08",
+    "world": "java",
+    "node": 8,
+    "difficulty": "medium",
+    "topic": "Java If/Else",
+    "objective": "Read an integer and print 'Positive', 'Negative' or 'Zero'.",
+    "example": { "input": "0", "output": "Zero" },
+    "starterCode": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Read and branch\n    }\n}",
+    "testCases": [
+      { "input": "0", "output": "Zero" },
+      { "input": "5", "output": "Positive" },
+      { "input": "-3", "output": "Negative" }
+    ]
+  },
+  {
+    "questId": "java_09",
+    "world": "java",
+    "node": 9,
+    "difficulty": "medium",
+    "topic": "Java Switch / Multi-branch",
+    "objective": "Read an integer (1-3) and print 'One', 'Two', or 'Three'. If outside range print 'Other'.",
+    "example": { "input": "2", "output": "Two" },
+    "starterCode": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Read and use switch\n    }\n}",
+    "testCases": [
+      { "input": "2", "output": "Two" },
+      { "input": "1", "output": "One" },
+      { "input": "5", "output": "Other" }
+    ]
+  },
+  {
+    "questId": "java_10",
+    "world": "java",
+    "node": 10,
+    "difficulty": "hard",
+    "topic": "Java For Loop",
+    "objective": "Read n and print the sum of 1..n.",
+    "example": { "input": "4", "output": "10" },
+    "starterCode": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // compute sum using loop\n    }\n}",
+    "testCases": [
+      { "input": "4", "output": "10" },
+      { "input": "1", "output": "1" },
+      { "input": "10", "output": "55" }
+    ]
+  },
+  {
+    "questId": "java_11",
+    "world": "java",
+    "node": 11,
+    "difficulty": "hard",
+    "topic": "Java While Loop",
+    "objective": "Read integers until zero and print count of negative numbers.",
+    "example": { "input": "1 -1 -2 0", "output": "2" },
+    "starterCode": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // loop until 0\n    }\n}",
+    "testCases": [
+      { "input": "1 -1 -2 0", "output": "2" },
+      { "input": "0", "output": "0" },
+      { "input": "-5 -4 0", "output": "2" }
+    ]
+  },
+  {
+    "questId": "java_12",
+    "world": "java",
+    "node": 12,
+    "difficulty": "hard",
+    "topic": "Java Arrays",
+    "objective": "Read n then n integers; print the maximum value.",
+    "example": { "input": "4 2 8 3 7", "output": "8" },
+    "starterCode": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // read array and print max\n    }\n}",
+    "testCases": [
+      { "input": "4 2 8 3 7", "output": "8" },
+      { "input": "3 -1 -2 -3", "output": "-1" },
+      { "input": "5 5 5 5 5 5", "output": "5" }
+    ]
+  },
+  {
+    "questId": "java_13",
+    "world": "java",
+    "node": 13,
+    "difficulty": "hard",
+    "topic": "Java Methods",
+    "objective": "Write a method to compute factorial of a non-negative integer and print factorial(n) for input n (n<=12).",
+    "example": { "input": "5", "output": "120" },
+    "starterCode": "import java.util.*;\npublic class Main {\n    public static long factorial(int n) {\n        // implement\n        return 1;\n    }\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // call factorial and print\n    }\n}",
+    "testCases": [
+      { "input": "5", "output": "120" },
+      { "input": "0", "output": "1" },
+      { "input": "10", "output": "3628800" }
+    ]
+  },
+  {
+    "questId": "java_14",
+    "world": "java",
+    "node": 14,
+    "difficulty": "hard",
+    "topic": "Java Classes / OOP",
+    "objective": "Define a class Student with fields name and grade. Read name (single word) and integer grade, print 'name grade'. You may use a class instance.",
+    "example": { "input": "Alice 90", "output": "Alice 90" },
+    "starterCode": "import java.util.*;\nclass Student {\n    String name;\n    int grade;\n    // add constructor\n}\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // read and use Student\n    }\n}",
+    "testCases": [
+      { "input": "Alice 90", "output": "Alice 90" },
+      { "input": "Bob 75", "output": "Bob 75" },
+      { "input": "Eve 100", "output": "Eve 100" }
+    ]
+  },
+  {
+    "questId": "java_15",
+    "world": "java",
+    "node": 15,
+    "difficulty": "hard",
+    "topic": "Java ArrayList / HashMap",
+    "objective": "Read n followed by n words; print each distinct word and its frequency in insertion order (word then count per line).",
+    "example": { "input": "6 a b a c b a", "output": "a 3\nb 2\nc 1" },
+    "starterCode": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // count and print frequencies preserving first appearance\n    }\n}",
+    "testCases": [
+      { "input": "6 a b a c b a", "output": "a 3\nb 2\nc 1" },
+      { "input": "3 x x y", "output": "x 2\ny 1" },
+      { "input": "4 hi hi hi hi", "output": "hi 4" }
+    ]
+  }
+]

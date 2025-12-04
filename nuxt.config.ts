@@ -12,6 +12,27 @@ export default defineNuxtConfig({
     }
   },
 
+    plugins: [
+    "~/plugins/monaco.client.ts"
+  ],
+  vite: {
+  optimizeDeps: {
+    include: ["monaco-editor"]
+  },
+  worker: {
+    format: "es", // REQUIRED so Monaco workers load properly
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "monaco-editor": ["monaco-editor"]
+        }
+      }
+    }
+  }
+},
+
   runtimeConfig: {
     supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
     supabaseUrl: process.env.SUPABASE_URL,

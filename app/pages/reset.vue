@@ -7,45 +7,16 @@
         </v-card-title>
 
         <v-form @submit.prevent="handleReset" class="d-flex flex-column gap-4">
-          <v-text-field
-            v-model="email"
-            label="Email"
-            type="email"
-            variant="outlined"
-            required
-          />
+          <v-text-field v-model="email" label="Email" type="email" variant="outlined" required />
 
-          <v-btn
-            type="submit"
-            class="btn-primary"
-            :loading="loading"
-            :disabled="loading"
-          >
-            Send Reset Link
-          </v-btn>
+          <v-btn type="submit" class="btn-primary" :loading="loading" :disabled="loading">Send Reset Link</v-btn>
 
-          <v-alert
-            v-if="message"
-            type="success"
-            variant="tonal"
-            class="mt-3 text-center"
-          >
-            {{ message }}
-          </v-alert>
-          <v-alert
-            v-if="error"
-            type="error"
-            variant="tonal"
-            class="mt-3 text-center"
-          >
-            {{ error }}
-          </v-alert>
+          <v-alert v-if="message" type="success" variant="tonal" class="mt-3 text-center">{{ message }}</v-alert>
+          <v-alert v-if="error" type="error" variant="tonal" class="mt-3 text-center">{{ error }}</v-alert>
 
           <p class="text-center mt-4">
             Remember your password?
-            <NuxtLink to="/login" class="text-secondary font-weight-bold">
-              Back to Login
-            </NuxtLink>
+            <NuxtLink to="/login" class="text-secondary font-weight-bold">Back to Login</NuxtLink>
           </p>
         </v-form>
       </v-card>
@@ -55,13 +26,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useSupabase } from '@/composables/useSupabase'
+import { useRouter } from '#imports'
+import { useSupabase } from '~/composables/useSupabase'
 
+const router = useRouter()
 const email = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const message = ref<string | null>(null)
-
 const supabase = useSupabase()
 
 const handleReset = async () => {
@@ -72,18 +44,17 @@ const handleReset = async () => {
 
   try {
     const redirectTo = useRuntimeConfig().public.baseUrl + '/reset-confirm'
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email.value, {
-      redirectTo,
-    })
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email.value, { redirectTo })
     if (err) throw err
     message.value = 'Password reset link sent. Check your email inbox.'
-  } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : String(e)
+  } catch (e: any) {
+    error.value = e?.message || String(e)
   } finally {
     loading.value = false
   }
 }
 </script>
+
 
 <style scoped>
 .auth-container {

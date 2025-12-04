@@ -1,25 +1,14 @@
-import { defineEventHandler } from 'h3'
-import { supabaseServer } from '../../utils/supabaseServerClient'
+import { getUserFromEvent, supabaseServer } from '../../utils/supabaseServerClient'
 
 export default defineEventHandler(async (event) => {
-const client = supabaseServer
+  const user = await getUserFromEvent(event)
+  if (!user) return { profile: null }
 
-
-  const authHeader = event.node.req.headers['authorization']
-  if (!authHeader) return { error: 'Missing auth' }
-
-  const token = authHeader.replace('Bearer ', '')
-
-  const { data: { user }, error: userErr } = await client.auth.getUser(token)
-  if (userErr || !user) return { error: 'Invalid token' }
-
-  const { data: profile, error } = await client
+  const { data } = await supabaseServer
     .from('profiles')
-    .select('*')
+    .select('id,username,xp_total,xp_weekly,level,lives,hints,diamonds,email')
     .eq('id', user.id)
     .single()
 
-  if (error) return { error: error.message }
-
-  return { profile }
+  return { profile: data }
 })

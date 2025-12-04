@@ -16,18 +16,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useGameProgress } from '~/composables/useGameProgress'
-import { levelFromTotalXp } from '../utils/clientLevels'
+import { ref, computed, watch } from "vue"
+import { useAuthUser } from "~/composables/useAuthUser"
+import { levelFromTotalXp } from "~/utils/clientLevels" // your local level calculator
 
-const emit = defineEmits(['level-up'])
-const { profile } = useGameProgress()
+/** SOURCE OF XP — always live */
+const { profile } = useAuthUser()
 
-// XP value used for animation
+/** animated xp value */
 const animatedTotalXp = ref(0)
 const showLevelUp = ref(false)
 
-// Watch for XP changes from backend profile
 watch(
   () => profile.value?.xp_total,
   (newXp, oldXp) => {
@@ -57,9 +56,8 @@ function animateXp(start: number, end: number) {
       const before = levelFromTotalXp(start).level
       const after = levelFromTotalXp(current).level
 
-      if (after > before) {
+      if (after > before && !showLevelUp.value) {
         showLevelUp.value = true
-        emit('level-up', after)
         setTimeout(() => (showLevelUp.value = false), 1500)
       }
     }, i * 20)
@@ -71,7 +69,9 @@ const current = computed(() => levelFromTotalXp(animatedTotalXp.value))
 const displayLevel = computed(() => current.value.level)
 const displayXp = computed(() => Math.floor(current.value.xpIntoLevel))
 const xpForLevel = computed(() => current.value.xpForThisLevel)
-const fillPct = computed(() => (displayXp.value / xpForLevel.value) * 100)
+const fillPct = computed(() =>
+  Math.min(100, (displayXp.value / xpForLevel.value) * 100)
+)
 
 defineExpose({
   refresh() {

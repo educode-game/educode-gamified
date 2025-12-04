@@ -25,7 +25,7 @@
             :key="editorKey"
           />
 
-          <div class="right-panel" v-if="showSide">
+          <div class="right-panel">
             <div class="template-toggle">
               <label>Template</label>
               <pre class="template-box">{{ templatePreview }}</pre>
@@ -37,11 +37,19 @@
               <div v-if="snippetsLoading" class="muted">Loading…</div>
 
               <ul v-else>
-                <li v-for="s in snippets" :key="s.id" @click="loadSnippet(s)">
-                  <strong>{{ s.title }}</strong>
-                  <div class="meta">
-                    {{ s.language.toUpperCase() }} •
-                    {{ new Date(s.created_at).toLocaleString() }}
+                <li v-for="s in snippets" :key="s.id">
+                  <div class="snippet-item">
+                    <div @click="loadSnippet(s)" class="snippet-body">
+                      <strong>{{ s.title }}</strong>
+                      <div class="meta">
+                        {{ (s.language || '').toUpperCase() }} •
+                        {{ s.created_at ? new Date(s.created_at).toLocaleString() : '' }}
+                      </div>
+                    </div>
+                    <div class="snippet-actions">
+                      <button class="btn small" @click="loadSnippet(s)">Load</button>
+                      <button class="btn small outline" @click="handleDelete(s.id)">Delete</button>
+                    </div>
                   </div>
                 </li>
               </ul>
@@ -58,68 +66,50 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue"
-import Navbar from "@/components/Navbar.vue"
-import Editor from "@/components/Editor.vue"
-import RunToolbar from "@/components/RunToolbar.vue"
-import OutputConsole from "@/components/OutputConsole.vue"
-import { useRunner } from "@/composables/useRunner"
-import { useSnippets } from "@/composables/useSnippets"
-import { useSupabase } from "@/composables/useSupabase"
+import { ref, computed, watch, onMounted } from 'vue'
+import Navbar from '@/components/Navbar.vue'
+import Editor from '@/components/Editor.vue'
+import RunToolbar from '@/components/RunToolbar.vue'
+import OutputConsole from '@/components/OutputConsole.vue'
+import { useRunner } from '@/composables/useRunner'
+import { useSnippets } from '@/composables/useSnippets'
+import { useSupabase } from '@/composables/useSupabase'
 
-// runner + snippets composables
 const supabase = useSupabase()
 const { output, run, running, error: runError } = useRunner()
-const { save, list } = useSnippets()
+const { save, list, deleteSnippet, snippets, loading: snippetsLoading } = useSnippets()
 
-// state
-const language = ref<"python" | "cpp" | "java">("python")
+const language = ref<'python' | 'cpp' | 'java'>('python')
 const editorKey = ref(0)
-const editorHeight = ref("56vh")
-const code = ref<string>("")
-const snippets = ref<any[]>([])
-const snippetsLoading = ref(false)
+const editorHeight = ref('56vh')
+const code = ref('')
 const showSide = ref(true)
 
-// CODE TEMPLATES
+// templates
 const templates = {
-  python: `# Sample Syntax
-print('Hello Educode')`,
-  cpp: `// Sample Syntax
-#include <iostream>
-using namespace std;
-
-int main() {
-  cout << "Hello Educode!";
-  return 0;
-}`,
-  java: `// Sample Syntax
-public class Main {
-  public static void main(String[] args) {
-    System.out.println("Hello Educode!");
-  }
-}`
+  python: `# Sample Syntax\nprint('Hello Educode')`,
+  cpp: `#include <iostream>\nusing namespace std;\n\nint main(){ cout << "Hello Educode!"; return 0; }`,
+  java: `public class Main { public static void main(String[] args) { System.out.println("Hello Educode!"); } }`
 } as const
 
 const templatePreview = computed(() => templates[language.value])
 
-// function to apply template
 const setTemplate = (lang: typeof language.value) => {
   code.value = templates[lang]
   editorKey.value += 1
 }
 
-// load snippets from DB
+watch(language, (newLang, oldLang) => {
+  const oldTemplate = templates[oldLang]
+  if (code.value.trim() === oldTemplate.trim()) {
+    setTemplate(newLang)
+  } else {
+    editorKey.value += 1
+  }
+})
+
 const loadSnippets = async () => {
-  snippetsLoading.value = true
-  try {
-    const token =
-      (await supabase.auth.getSession())?.data?.session?.access_token
-    const res = await list(token)
-    snippets.value =
-      res?.data?.snippets ?? res?.data ?? []
-  } catch (e) {}
-  snippetsLoading.value = false
+  await list()
 }
 
 onMounted(() => {
@@ -127,48 +117,33 @@ onMounted(() => {
   loadSnippets()
 })
 
-/*  
-  SMART NO-PROMPT AUTOSWITCH LOGIC
-  - If code still equals template → replace with new template
-  - If user edited → DO NOT override
-*/
-watch(language, (newLang, oldLang) => {
-  const oldTemplate = templates[oldLang]
-
-  // User did not edit → safe to auto-switch
-  if (code.value.trim() === oldTemplate.trim()) {
-    setTemplate(newLang)
-  } else {
-    // keep user's code, just update Monaco language
-    editorKey.value += 1
-  }
-})
-
-// Run button
 const onRun = async () => {
   await run(language.value, code.value)
 }
 
-// Save snippet
 const onSave = async () => {
   try {
-    const token =
-      (await supabase.auth.getSession())?.data?.session?.access_token
-    await save("Playground snippet", language.value, code.value, token)
-    await loadSnippets()
-    alert("Saved to Playground snippets")
+    const token = (await supabase.auth.getSession())?.data?.session?.access_token
+    await save('Playground snippet', language.value, code.value) // server will use auth from headers / cookies
+    await list()
+    alert('Saved to Playground snippets')
   } catch (e: any) {
-    alert("Save failed: " + (e?.message || String(e)))
+    alert('Save failed: ' + (e?.message || String(e)))
   }
 }
 
-// load a snippet
 const loadSnippet = (s: any) => {
   language.value = s.language
   code.value = s.code
   editorKey.value += 1
 }
+
+const handleDelete = async (id: string) => {
+  if (!confirm('Delete this snippet?')) return
+  await deleteSnippet(id)
+}
 </script>
+
 
 <style scoped>
 /* EduCode Playground — glowing theme (matches dashboard) */

@@ -1,44 +1,63 @@
 // server/api/admin/leaderboard-reset.post.ts
 import { supabaseServer } from "../../utils/supabaseServerClient"
+import { createError } from 'h3'
 
-export default defineEventHandler(async (event) => {
-  // Optional: You may restrict only admins
-  // const user = await getUserFromEvent(event)
-  // if (!user || user.role !== 'admin') throw createError({ ... })
+export default defineEventHandler(async () => {
+  const client = supabaseServer
 
   try {
-    // RESET ALL XP
-    const { error: xpErr } = await supabaseServer
-      .from("profiles")
-      .update({ xp_total: 0 })
-      .neq("id", "") // ensures update applies to all rows
+    // 1. Load current leaderboard
+    const { data: entries, error: lbErr } = await client
+      .from("leaderboard_weekly")
+      .select("user_id, xp_earned")
+      .order("xp_earned", { ascending: false })
 
-    if (xpErr) {
-      console.error("Error updating profiles", xpErr)
-      throw createError({ statusCode: 500, statusMessage: "Profile reset failed" })
+    if (lbErr) throw lbErr
+    if (!Array.isArray(entries)) throw new Error('No leaderboard entries found')
+
+    const rewards = [
+      { diamonds: 50, hints: 3 },
+      { diamonds: 30, hints: 2 },
+      { diamonds: 15, hints: 1 }
+    ]
+
+    // 2. Apply rewards (safe per-user updates)
+    for (let i = 0; i < entries.length && i < 3; i++) {
+      const { user_id } = entries[i]
+      const r = rewards[i]
+
+      if (!user_id) continue
+
+      // increment diamonds using RPC (you have this RPC)
+      try {
+        await client.rpc("increment_diamonds", { uid: user_id, amount: r.diamonds })
+      } catch (e) {
+        console.error('increment_diamonds rpc failed, falling back to direct update', e)
+        const { data: pr, error: pre } = await client.from('profiles').select('diamonds').eq('id', user_id).maybeSingle()
+        const cur = (pr?.diamonds ?? 0) + r.diamonds
+        await client.from('profiles').update({ diamonds: cur }).eq('id', user_id)
+      }
+
+      // increment hints via read+update (no RPC present)
+      try {
+        const { data: pr, error: pre } = await client.from('profiles').select('hints').eq('id', user_id).maybeSingle()
+        if (pre) throw pre
+        const curHints = (pr?.hints ?? 0) + r.hints
+        await client.from('profiles').update({ hints: curHints }).eq('id', user_id)
+      } catch (e) {
+        console.error('increment hints failed for user', user_id, e)
+      }
     }
 
-    // RESET PROGRESS TABLE
-    const { error: progErr } = await supabaseServer
-      .from("world_progress")
-      .update({
-        completed_nodes: [],
-        unlocked_nodes: [1]
-      })
-      .neq("user_id", "") // apply to all users
+    // 3. Reset xp_weekly for everyone (sets all to 0)
+    await client.from("profiles").update({ xp_weekly: 0 }).neq('id', '')
 
-    if (progErr) {
-      console.error("Error resetting progress:", progErr)
-      throw createError({ statusCode: 500, statusMessage: "Progress reset failed" })
-    }
+    // 4. Clear leaderboard rows
+    await client.from("leaderboard_weekly").delete()
 
-    return { ok: true, message: "Leaderboard reset completed." }
-
+    return { ok: true, message: "Leaderboard reset & rewards issued." }
   } catch (err: any) {
-    console.error("Reset error:", err)
-    throw createError({
-      statusCode: 500,
-      statusMessage: err?.message ?? "Unexpected reset error"
-    })
+    console.error("RESET ERROR:", err)
+    throw createError({ statusCode: 500, message: err.message || 'Reset failed' })
   }
 })

@@ -1,13 +1,12 @@
 <template>
   <div class="dashboard-page">
-    <!-- Navbar -->
     <nav class="dashboard-navbar">
       <div class="navbar-left" @click="router.push('/index')">
-         <img src="/logo.png" class="logo" />
-      <div class="brand-text">
-        <h3>EduCode</h3>
-        <p>Write. Run. Learn. Play.</p>
-      </div>
+        <img src="/logo.png" class="logo" />
+        <div class="brand-text">
+          <h3>EduCode</h3>
+          <p>Write. Run. Learn. Play.</p>
+        </div>
       </div>
 
       <div class="navbar-right">
@@ -16,13 +15,8 @@
       </div>
     </nav>
 
-    <!-- Dashboard Grid -->
     <div class="dashboard-grid">
-
-      <!-- Profile + XP Row -->
       <div class="profile-xp-row">
-
-        <!-- Profile Card -->
         <div class="dashboard-card profile-info-card">
           <img src="/default-avatar.jpg" alt="Profile" class="avatar" />
           <div>
@@ -31,7 +25,6 @@
           </div>
         </div>
 
-        <!-- XP Card -->
         <div class="dashboard-card xp-card">
           <div class="xp-header">
             <h3>Experience Progress</h3>
@@ -47,10 +40,8 @@
             <span>Next Level: {{ nextLevelXp }}</span>
           </div>
         </div>
-
       </div>
 
-      <!-- Stats -->
       <div class="stats-row">
         <div class="dashboard-card stat-card" v-for="stat in stats" :key="stat.label">
           <i :class="stat.icon" class="stat-icon"></i>
@@ -61,123 +52,74 @@
         </div>
       </div>
 
-      <!-- Actions Row -->
       <div class="actions-row">
         <div class="actions-card glow-animate">
-
-          <!-- PLAYGROUND -->
           <div class="playground-card">
             <v-btn class="btn gradient w-100" @click="router.push('/playground')">
               <i class="ri-code-s-slash-line"></i> Playground
             </v-btn>
-
-            
           </div>
 
-          <!-- WORLDS BUTTON -->
           <v-btn class="btn gradient big-btn" @click="router.push('/worlds')">
             <i class="ri-gamepad-fill"></i> Worlds
           </v-btn>
 
-          <!-- LEADERBOARD BUTTON -->
           <v-btn class="btn gradient big-btn" @click="router.push('/leaderboard')">
             <i class="ri-trophy-fill"></i> Leaderboard
           </v-btn>
-          
         </div>
       </div>
-
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "#app";
-import { useSupabase } from "~/composables/useSupabase";
-import { useAuthUser } from "~/composables/useAuthUser";
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from '#imports'
+import { useSupabase } from '~/composables/useSupabase'
+import { useAuthUser } from '~/composables/useAuthUser'
+import { authFetch } from '~/utils/authFetch'
 
-const router = useRouter();
-const supabase = useSupabase();
-const { fetchUser } = useAuthUser();
+const router = useRouter()
+const supabase = useSupabase()
+const { user, fetchUser } = useAuthUser()
 
-/* ------------------------------
-   PROFILE RESPONSE TYPE
---------------------------------*/
-interface ProfileResponse {
-  profile: {
-    username: string;
-    email: string;
-    level: number;
-    diamonds: number;
-    lives: number;
-    xp_total: number;
-  } | null;
-  user?: any;
-}
+const profile = ref<any>(null)
+const nextLevelXp = 230
 
-/* ------------------------------
-   STATE
---------------------------------*/
-const profile = ref<any>(null);
-const sessionToken = ref<string | null>(null);
-const nextLevelXp = 230;
-
-/* ------------------------------
-   FETCH SESSION TOKEN
---------------------------------*/
-const fetchSession = async () => {
-  const { data } = await supabase.auth.getSession();
-  sessionToken.value = data.session?.access_token || null;
-};
-
-/* ------------------------------
-   LOAD PROFILE FROM SERVER
---------------------------------*/
-const loadProfile = async () => {
-  if (!sessionToken.value) return;
-
-  const res = await $fetch<ProfileResponse>("/api/auth/profile", {
-    headers: {
-      Authorization: `Bearer ${sessionToken.value}`,
-    },
-  });
-
-  profile.value = res.profile;
-};
-
-/* ------------------------------
-   ON MOUNT
---------------------------------*/
-onMounted(async () => {
-  await fetchUser();     // ensures user state
-  await fetchSession();  // loads access token
-  await loadProfile();   // loads profile row
-});
-
-/* ------------------------------
-   COMPUTED
---------------------------------*/
 const xpPercentage = computed(() => {
-  if (!profile.value) return 0;
-  return (profile.value.xp_total / nextLevelXp) * 100;
-});
+  if (!profile.value) return 0
+  return Math.round((profile.value.xp_total / nextLevelXp) * 100)
+})
 
 const stats = computed(() => [
-  { label: "Level", value: profile.value?.level, icon: "ri-bar-chart-box-fill" },
-  { label: "Diamonds", value: profile.value?.diamonds, icon: "ri-gem-fill" },
-  { label: "Lives", value: profile.value?.lives, icon: "ri-heart-3-fill" },
-  { label: "XP", value: profile.value?.xp_total, icon: "ri-flashlight-fill" },
-]);
+  { label: "Level", value: profile.value?.level ?? 0, icon: "ri-bar-chart-box-fill" },
+  { label: "Diamonds", value: profile.value?.diamonds ?? 0, icon: "ri-vip-diamond-fill" },
+  { label: "Lives", value: profile.value?.lives ?? 0, icon: "ri-heart-3-fill" },
+  { label: "XP", value: profile.value?.xp_total ?? 0, icon: "ri-flashlight-fill" },
+])
 
-/* ------------------------------
-   LOGOUT
---------------------------------*/
 const logout = async () => {
   await supabase.auth.signOut();
-  router.push("/");
+  router.push('/');
 };
+
+
+const loadProfile = async () => {
+  try {
+    const res = await authFetch<{ profile: any }>('/api/auth/profile')
+    profile.value = res.profile ?? null
+  } catch (e) {
+    console.error('Load profile failed', e)
+  }
+}
+
+onMounted(async () => {
+  await fetchUser()  // ensure user state is loaded
+  await loadProfile()
+})
 </script>
+
 
 <style scoped>
 @import url("https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css");

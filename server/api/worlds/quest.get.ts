@@ -1,37 +1,41 @@
-// /server/api/worlds/quest.get.ts
-import { loadQuestFile } from '../../utils/loadQuestFile'
-import { getQuery } from 'h3'
+// server/api/worlds/quest.get.ts
+import { getQuery, createError } from "h3"
+import { loadQuestFile } from "../../utils/loadQuestFile"
+
+function normalizeWorld(raw: any) {
+  let s = String(raw ?? "").toLowerCase().trim()
+  s = s.replace(/\s+/g, "-")
+  s = s.replace("c++", "cpp")
+  s = s.replace("cplusplus", "cpp")
+  if (s.endsWith("-adventure")) s = s.replace("-adventure", "")
+  return s
+}
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
-  const world = query.world as string
-  const node = Number(query.node)
+  const q = getQuery(event)
+  const world_code = normalizeWorld(q.world || q.world_code || "")
+  const node = Number(q.node || 0)
 
-  if (!world || isNaN(node)) {
-    throw createError({
-      statusCode: 400,
-      message: 'Missing or invalid world/node'
-    })
+  if (!world_code || !node) {
+    throw createError({ statusCode: 400, message: "world and node required" })
   }
 
-  let dataset: any[]
-  try {
-    dataset = loadQuestFile(world)
-  } catch (err: any) {
-    throw createError({
-      statusCode: 400,
-      message: err?.message || 'Quest file error'
-    })
-  }
-
-  const quest = dataset.find((q: any) => q.node === node)
+  const list = loadQuestFile(world_code)
+  const quest = list.find((x: any) => Number(x.node) === node)
 
   if (!quest) {
-    throw createError({
-      statusCode: 404,
-      message: 'Quest not found'
-    })
+    throw createError({ statusCode: 404, message: "Quest not found" })
   }
 
-  return quest
+  return {
+    questId: quest.questId,
+    world: quest.world,
+    node: quest.node,
+    difficulty: quest.difficulty,
+    topic: quest.topic,
+    objective: quest.objective,
+    example: quest.example,
+    starterCode: quest.starterCode,
+    testCases: quest.testCases
+  }
 })

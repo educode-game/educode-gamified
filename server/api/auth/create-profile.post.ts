@@ -9,9 +9,7 @@ export default defineEventHandler(async (event) => {
     return { error: 'Missing userId/username/email' }
   }
 
-  const client = supabaseServer
-
-  const { data, error } = await client
+  const { data, error } = await supabaseServer
     .from('profiles')
     .upsert(
       {
@@ -21,11 +19,9 @@ export default defineEventHandler(async (event) => {
         xp_total: 0,
         xp_weekly: 0,
         level: 1,
-        diamonds: 0,
         lives: 5,
+        diamonds: 0,
         hints: 0,
-        badge_title: null,
-        metadata: {},
         joined_at: new Date().toISOString(),
         last_life_generated_at: new Date().toISOString()
       },
@@ -35,6 +31,5 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (error) return { error: error.message }
-
   return { success: true, profile: data }
 })

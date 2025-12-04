@@ -1,5 +1,5 @@
-import { ref } from 'vue'
-import { useSupabase } from './useSupabase'   // ✅ added
+import { ref } from "vue"
+import { useSupabase } from "./useSupabase"
 
 export const useAuthSignup = () => {
   const supabase = useSupabase()
@@ -7,21 +7,23 @@ export const useAuthSignup = () => {
   const error = ref<string | null>(null)
   const message = ref<string | null>(null)
 
-  const signup = async (email: string, password: string): Promise<void> => {
+  const signup = async (email: string, password: string) => {
     loading.value = true
     error.value = null
     message.value = null
+
     try {
-      const redirectTo = useRuntimeConfig().public.baseUrl + '/confirm'
+      const redirectTo = useRuntimeConfig().public.baseUrl + "/confirm"
       const { error: err } = await supabase.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: redirectTo }
       })
       if (err) throw err
-      message.value = 'Confirmation email sent. Check your inbox.'
-    } catch (e: unknown) {
-      error.value = e instanceof Error ? e.message : String(e)
+
+      message.value = "A confirmation email has been sent."
+    } catch (e: any) {
+      error.value = e.message ?? "Signup failed"
     } finally {
       loading.value = false
     }
