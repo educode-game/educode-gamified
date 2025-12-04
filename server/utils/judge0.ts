@@ -6,8 +6,9 @@
 // /server/utils/judge0.ts
 import { createError } from 'h3'   // ⬅️ add this
 
-const JUDGE0_URL = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true";
+// const JUDGE0_URL = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true";
 
+const JUDGE0_URL = " judge0-ce.p.rapidapi.com"; 
 
 export interface Judge0Result {
   stdout?: string | null;

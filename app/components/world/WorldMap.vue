@@ -16,14 +16,14 @@
       />
 
       <!-- 🧪 TEMP DEBUG LABELS (remove later) -->
-      <div
+      <!-- <div
         v-for="node in nodesPct"
         :key="`label-${node.id}`"
         class="debug-label"
         :style="{ left: node.leftPct + '%', top: node.topPct + '%' }"
       >
         Node {{ node.id }}
-      </div>
+      </div> -->
     </div>
   </div>
 </template>

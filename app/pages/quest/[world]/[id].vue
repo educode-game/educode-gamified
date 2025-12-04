@@ -5,13 +5,11 @@
     <div class="quest-page">
       <h1 class="title">Quest — {{ challenge?.description || "Loading..." }}</h1>
 
-      <div v-if="loading" class="loading">
-        Loading quest...
-      </div>
+      <div v-if="loading" class="loading">Loading quest...</div>
 
       <div v-else class="content">
 
-        <!-- LEFT: CODE EDITOR -->
+        <!-- LEFT SIDE -->
         <div class="editor-section">
           <RunToolbar
             v-model:language="language"
@@ -20,40 +18,36 @@
             @run="runCode"
           />
 
-         <Editor v-model="code" :language="language" height="50vh" />
+          <Editor v-model="code" :language="language" height="50vh" />
 
           <div class="actions">
             <v-btn class="btn-primary" :loading="submitting" @click="submitCode">
-              Submit
-            </v-btn>
-            <v-btn outlined @click="runCode" :loading="running">
-              Run
+              SUBMIT
             </v-btn>
           </div>
 
-         <OutputConsole :text="output" :errorText="errorText" />
+          <OutputConsole :text="formattedOutput" :error="runError" />
         </div>
 
-        <!-- RIGHT: DETAILS -->
+        <!-- RIGHT INFO -->
         <div class="side-panel">
           <h3>Quest Info</h3>
-          <p>Difficulty: {{ challenge?.difficulty }}</p>
-          <p>XP Reward: {{ challenge?.xp_base }}</p>
+          <p><strong>Difficulty:</strong> {{ challenge?.difficulty }}</p>
+          <p><strong>XP Reward:</strong> {{ challenge?.xp_base }}</p>
 
-          <div>
-            <h4>Hints</h4>
-            <v-btn
-              v-for="n in challenge?.hints_available || 0"
-              :key="n"
-              small
-              @click="buyHint(n)"
-            >
-              Buy Hint {{ n }} (1 ♦)
-            </v-btn>
-          </div>
+          <h4>Hints</h4>
+          <v-btn
+            v-for="n in challenge?.hints_available || 0"
+            :key="n"
+            small
+            @click="buyHint(n)"
+          >
+            Buy Hint {{ n }} (1 ♦)
+          </v-btn>
         </div>
       </div>
 
+      <!-- RESULT MODAL -->
       <QuestResultModal
         v-model:open="resultOpen"
         :stars="lastResult.stars"
@@ -65,33 +59,44 @@
   </v-app>
 </template>
 
-
-<!-- <script setup lang="ts">
-import { ref, onMounted } from "vue"
-import { useRoute } from "#imports"
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue"
 import axios from "axios"
+import { useRoute } from "#imports"
 import Navbar from "@/components/Navbar.vue"
 import Editor from "@/components/Editor.vue"
 import RunToolbar from "@/components/RunToolbar.vue"
 import OutputConsole from "@/components/OutputConsole.vue"
 import QuestResultModal from "@/components/QuestResultModal.vue"
+import { useRunner } from "@/composables/useRunner"
 import { useSupabase } from "@/composables/useSupabase"
 
-const route = useRoute()
-const supabase = useSupabase()
+/* ---------------- TYPES ---------------- */
+interface RunResult {
+  stdout?: string | null
+  stderr?: string | null
+  compile_output?: string | null
+  status?: { id: number; description: string } | null
+}
 
+/* ---------------- ROUTE + BASE STATE ---------------- */
+const route = useRoute()
 const world = String(route.params.world)
 const id = Number(route.params.id)
 
+const supabase = useSupabase()
+const { output, run, running, error } = useRunner()
+
 const loading = ref(true)
 const challenge = ref<any>(null)
+
 const language = ref("python")
 const code = ref("")
-const output = ref("")
-const running = ref(false)
 const submitting = ref(false)
-const errorText = ref("")
 
+const runError = computed(() => error.value)
+
+/* ---------------- QUEST RESULT ---------------- */
 const resultOpen = ref(false)
 const lastResult = ref({
   stars: 0,
@@ -100,230 +105,72 @@ const lastResult = ref({
   diamonds_awarded: 0
 })
 
-console.log("🧩 Loading Quest:", { world, id })
+/* ---------------- OUTPUT FORMATTER ---------------- */
+const formattedOutput = computed(() => {
+  if (!output.value) return ""
 
-// ---------------------------
-// 📌 LOAD QUEST FROM LOCAL JSON
-// ---------------------------
-// onMounted(async () => {
-//   try {
-//     const file = `/data/${world}_quests.json` // now works, because public folder exposes files
+  const result = output.value as unknown as RunResult
 
-//     const resp = await axios.get(file)
-//     const quests = resp.data || []
+  if (typeof output.value === "string") return output.value
 
-//     const found = quests.find((q: any) => Number(q.node) === id)
+  if (result.stdout) return result.stdout.trim()
+  if (result.stderr) return `❌ Runtime Error:\n${result.stderr}`
+  if (result.compile_output) return `⚠️ Compilation Error:\n${result.compile_output}`
 
-//     if (!found) {
-//       throw new Error(`Quest not found for ${world} node=${id}`)
-//     }
-
-//     challenge.value = found
-//     language.value = found.language || (world === "python" ? "python" : world)
-//     code.value = found.starterCode || ""
-
-//   } catch (err: any) {
-//     console.error("❌ Failed loading quest:", err)
-//     errorText.value = err.response?.data?.message || err.message
-//   } finally {
-//     loading.value = false
-//   }
-// })
-
-onMounted(async () => {
-  try {
-    console.log("📥 Fetching quest file:", `/data/${world}_quests.json`)
-
-    const resp = await fetch(`/data/${world}_quests.json`)
-    const quests = await resp.json()
-
-    const found = quests.find((q: any) => Number(q.node) === id)
-
-    if (!found) {
-      throw new Error(`Quest not found for world=${world} & node=${id}`)
-    }
-
-    // Normalize fields so UI stays untouched
-    challenge.value = {
-      id: found.questId,
-      title: found.topic,
-      description: found.objective,
-      difficulty: found.difficulty,
-      xp_base: found.example?.output ? 10 : 0, // temporary XP logic until backend maps it
-      hints_available: found.hints_available ?? 0,
-      testCases: found.testCases,
-      language: world === 'cpp' ? 'cpp' : world === 'java' ? 'java' : 'python',
-    }
-
-    code.value = found.starterCode
-    language.value = challenge.value.language
-
-    console.log("✅ Loaded Quest:", challenge.value)
-
-  } catch (err: any) {
-    console.error("❌ Failed to load quest:", err)
-    errorText.value = err?.message || "Failed to load quest"
-  } finally {
-    loading.value = false
-  }
+  return "⚠️ Code executed but produced no output."
 })
 
-
-
-
-// ---------------------------
-// ▶ RUN CODE
-// ---------------------------
-const runCode = async () => {
-  running.value = true
-  output.value = ""
-  errorText.value = ""
-
-  try {
-    const res = await axios.post("/api/challenges/run", {
-      language: language.value,
-      code: code.value,
-      input: challenge.value?.testCases?.[0]?.input || ""
-    })
-
-    output.value = res.data?.output || JSON.stringify(res.data)
-  } catch (err: any) {
-    errorText.value = err?.response?.data?.message || err?.message || "Execution failed"
-  }
-
-  running.value = false
-}
-
-
-
-// ---------------------------
-// 🏆 SUBMIT CODE (Progress Logic)
-// ---------------------------
-const submitCode = async () => {
-  submitting.value = true
-
-  try {
-    const { data: sessionData } = await supabase.auth.getSession()
-    const token = sessionData?.session?.access_token
-
-    const res = await axios.post(
-      "/api/worlds/quest-submit",
-      { world_code: world, node_id: id, code: code.value },
-      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-    )
-
-    lastResult.value = res.data
-    resultOpen.value = true
-
-  } catch (err: any) {
-    console.error("❌ Submit failed:", err)
-    errorText.value = err?.response?.data?.message || err?.message || "Submit failed"
-  } finally {
-    submitting.value = false
-  }
-}
-
-
-// ---------------------------
-// 💡 HINTS (placeholder)
-// ---------------------------
-const buyHint = async (n: number) => {
-  alert(`Hint #${n} coming soon 🔍`)
-}
-</script> -->
-
-
-<script setup lang="ts">
-import { ref, onMounted, computed } from "vue"
-import { useRoute } from "#imports"
-import axios from "axios"
-import Navbar from "@/components/Navbar.vue"
-import Editor from "@/components/Editor.vue"
-import RunToolbar from "@/components/RunToolbar.vue"
-import OutputConsole from "@/components/OutputConsole.vue"
-import QuestResultModal from "@/components/QuestResultModal.vue"
-import { useSupabase } from "@/composables/useSupabase"
-import { useRunner } from "@/composables/useRunner"
-
-const route = useRoute()
-const supabase = useSupabase()
-const { output, running, error, run } = useRunner()
-
-const world = String(route.params.world)
-const id = Number(route.params.id)
-
-const loading = ref(true)
-const challenge = ref<any>(null)
-
-// language is derived from world but still reactive
-const language = ref<string>("python")
-const code = ref("")
-const submitting = ref(false)
-
-const errorText = computed(() => error.value)
-
-const resultOpen = ref(false)
-const lastResult = ref({
-  stars: 0,
-  xp: 0,
-  level_up: false,
-  diamonds_awarded: 0
-})
-
-console.log("🧩 Loading Quest:", { world, id })
-
-// ---------------------------
-// 📌 LOAD QUEST FROM LOCAL JSON
-// ---------------------------
+/* ---------------- LOAD QUEST DATA ---------------- */
 onMounted(async () => {
   try {
-    const file = `/data/${world}_quests.json` // in /public/data/...
-    const resp = await axios.get(file)
-    const quests = resp.data || []
+    const resp = await axios.get(`/data/${world}_quests.json`)
+    const found = resp.data.find((q: any) => Number(q.node) === id)
 
-    const found = quests.find((q: any) => Number(q.node) === id)
-    if (!found) throw new Error(`Quest not found world=${world} id=${id}`)
+    if (!found) throw new Error("Quest not found")
 
-     challenge.value = {
-      id: found.questId,
-      title: found.topic,
-      description: found.objective,
-      difficulty: found.difficulty,
-      xp_base: found.example?.output ? 10 : 0, // temporary XP logic until backend maps it
-      hints_available: found.hints_available ?? 0,
-      testCases: found.testCases,
-      language: world === 'cpp' ? 'cpp' : world === 'java' ? 'java' : 'python',
-    }
-
-    // language auto from world
-    if (world === "cpp") language.value = "cpp"
-    else if (world === "java") language.value = "java"
-    else language.value = "python"
-
+    language.value = world === "cpp" ? "cpp" : world === "java" ? "java" : "python"
     code.value = found.starterCode || ""
-  } catch (err: any) {
+
+    challenge.value = {
+      description: found.objective,
+      difficulty: found.difficulty,
+      xp_base: 10,
+      hints_available: found.hints_available ?? 0,
+      testCases: found.testCases,
+    }
+  } catch (err) {
     console.error("❌ Failed loading quest:", err)
   } finally {
     loading.value = false
   }
 })
 
-// ---------------------------
-// ▶ RUN CODE (using useRunner + /api/run)
-// ---------------------------
+/* ---------------- RUN CODE ---------------- */
 const runCode = async () => {
-  if (!challenge.value) return
-  const sampleInput = challenge.value.testCases?.[0]?.input ?? ""
+  const sampleInput = challenge.value?.testCases?.[0]?.input ?? ""
   await run(language.value, code.value, sampleInput)
 }
 
-// ---------------------------
-// 🏆 SUBMIT CODE (Progress Logic)
-// ---------------------------
+/* ---------------- SUBMIT / VALIDATE ---------------- */
 const submitCode = async () => {
   submitting.value = true
 
   try {
+    let passed = 0
+
+    for (const test of challenge.value.testCases) {
+      await run(language.value, code.value, test.input ?? "")
+      const result = output.value as unknown as RunResult
+
+      if (result.stdout?.trim() === String(test.output).trim()) passed++
+    }
+
+    if (passed !== challenge.value.testCases.length) {
+      output.value = `⚠ ${passed}/${challenge.value.testCases.length} tests passed. Try again!`
+      return
+    }
+
+    // SAVE SUCCESS
     const { data: sessionData } = await supabase.auth.getSession()
     const token = sessionData?.session?.access_token
 
@@ -335,48 +182,32 @@ const submitCode = async () => {
 
     lastResult.value = res.data
     resultOpen.value = true
-  } catch (err: any) {
-    console.error("❌ Submit failed:", err)
-  } finally {
-    submitting.value = false
+    output.value = `🎉 All test cases passed!`
+
+  } catch (err) {
+    console.error(err)
   }
+
+  submitting.value = false
 }
 
-// ---------------------------
-// 💡 HINTS (placeholder)
-// ---------------------------
-const buyHint = async (n: number) => {
+/* ---------------- HINTS ---------------- */
+const buyHint = (n: number) => {
   alert(`Hint #${n} coming soon 🔍`)
 }
 </script>
 
-
-
-
-
 <style scoped>
-.quest-page {
-  padding: 80px 24px;
-  color: white;
-}
-.content {
-  display: flex;
-  gap: 24px;
-}
-.editor-section {
-  flex: 1;
-}
+.quest-page { padding: 80px 24px; color: white; }
+.content { display: flex; gap: 24px; }
+.editor-section { flex: 1; }
 .side-panel {
   width: 300px;
   background: rgba(0,0,0,0.4);
   padding: 12px;
   border-radius: 10px;
 }
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
+.actions { display: flex; gap: 8px; margin-top: 10px; }
 .btn-primary {
   background: linear-gradient(90deg,#9333ea,#00e5ff);
   color: white;
