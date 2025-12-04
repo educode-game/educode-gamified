@@ -2,6 +2,11 @@
 export default defineNuxtConfig({
   ssr: false,
 
+routeRules: {
+    "/monaco/**": { cors: true, headers: { "Cache-Control": "public, max-age=31536000" } },
+    "/monaco/-please-ignore-.js": { cors: true }
+  },
+
   app: {
     head: {
       title: 'Educode',
