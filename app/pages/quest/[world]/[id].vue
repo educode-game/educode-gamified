@@ -16,10 +16,11 @@
           <RunToolbar
             v-model:language="language"
             :running="running"
+            :disableLang="true"
             @run="runCode"
           />
 
-          <Editor v-model="code" :language="language" height="50vh" />
+         <Editor v-model="code" :language="language" height="50vh" />
 
           <div class="actions">
             <v-btn class="btn-primary" :loading="submitting" @click="submitCode">
@@ -30,7 +31,7 @@
             </v-btn>
           </div>
 
-          <OutputConsole :text="output" :errorText="errorText" />
+         <OutputConsole :text="output" :errorText="errorText" />
         </div>
 
         <!-- RIGHT: DETAILS -->
@@ -65,7 +66,7 @@
 </template>
 
 
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import { ref, onMounted } from "vue"
 import { useRoute } from "#imports"
 import axios from "axios"
@@ -229,8 +230,125 @@ const submitCode = async () => {
 const buyHint = async (n: number) => {
   alert(`Hint #${n} coming soon 🔍`)
 }
-</script>
+</script> -->
 
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from "vue"
+import { useRoute } from "#imports"
+import axios from "axios"
+import Navbar from "@/components/Navbar.vue"
+import Editor from "@/components/Editor.vue"
+import RunToolbar from "@/components/RunToolbar.vue"
+import OutputConsole from "@/components/OutputConsole.vue"
+import QuestResultModal from "@/components/QuestResultModal.vue"
+import { useSupabase } from "@/composables/useSupabase"
+import { useRunner } from "@/composables/useRunner"
+
+const route = useRoute()
+const supabase = useSupabase()
+const { output, running, error, run } = useRunner()
+
+const world = String(route.params.world)
+const id = Number(route.params.id)
+
+const loading = ref(true)
+const challenge = ref<any>(null)
+
+// language is derived from world but still reactive
+const language = ref<string>("python")
+const code = ref("")
+const submitting = ref(false)
+
+const errorText = computed(() => error.value)
+
+const resultOpen = ref(false)
+const lastResult = ref({
+  stars: 0,
+  xp: 0,
+  level_up: false,
+  diamonds_awarded: 0
+})
+
+console.log("🧩 Loading Quest:", { world, id })
+
+// ---------------------------
+// 📌 LOAD QUEST FROM LOCAL JSON
+// ---------------------------
+onMounted(async () => {
+  try {
+    const file = `/data/${world}_quests.json` // in /public/data/...
+    const resp = await axios.get(file)
+    const quests = resp.data || []
+
+    const found = quests.find((q: any) => Number(q.node) === id)
+    if (!found) throw new Error(`Quest not found world=${world} id=${id}`)
+
+     challenge.value = {
+      id: found.questId,
+      title: found.topic,
+      description: found.objective,
+      difficulty: found.difficulty,
+      xp_base: found.example?.output ? 10 : 0, // temporary XP logic until backend maps it
+      hints_available: found.hints_available ?? 0,
+      testCases: found.testCases,
+      language: world === 'cpp' ? 'cpp' : world === 'java' ? 'java' : 'python',
+    }
+
+    // language auto from world
+    if (world === "cpp") language.value = "cpp"
+    else if (world === "java") language.value = "java"
+    else language.value = "python"
+
+    code.value = found.starterCode || ""
+  } catch (err: any) {
+    console.error("❌ Failed loading quest:", err)
+  } finally {
+    loading.value = false
+  }
+})
+
+// ---------------------------
+// ▶ RUN CODE (using useRunner + /api/run)
+// ---------------------------
+const runCode = async () => {
+  if (!challenge.value) return
+  const sampleInput = challenge.value.testCases?.[0]?.input ?? ""
+  await run(language.value, code.value, sampleInput)
+}
+
+// ---------------------------
+// 🏆 SUBMIT CODE (Progress Logic)
+// ---------------------------
+const submitCode = async () => {
+  submitting.value = true
+
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData?.session?.access_token
+
+    const res = await axios.post(
+      "/api/worlds/quest-submit",
+      { world_code: world, node_id: id, code: code.value },
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    )
+
+    lastResult.value = res.data
+    resultOpen.value = true
+  } catch (err: any) {
+    console.error("❌ Submit failed:", err)
+  } finally {
+    submitting.value = false
+  }
+}
+
+// ---------------------------
+// 💡 HINTS (placeholder)
+// ---------------------------
+const buyHint = async (n: number) => {
+  alert(`Hint #${n} coming soon 🔍`)
+}
+</script>
 
 
 

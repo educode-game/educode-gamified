@@ -1,8 +1,10 @@
+// app/composables/useRunner.ts
 import { ref } from "vue"
 import { useApi } from "./useApi"
 
 export const useRunner = () => {
   const { apiFetch } = useApi()
+
   const output = ref("")
   const running = ref(false)
   const error = ref("")
@@ -13,7 +15,12 @@ export const useRunner = () => {
     error.value = ""
 
     try {
-      const res = await apiFetch<any>("/api/run", {
+      const res = await apiFetch<{
+        stdout?: string
+        stderr?: string
+        compile_output?: string
+        status?: { id: number; description: string } | null
+      }>("/api/run", {
         method: "POST",
         body: { language, code, input }
       })
@@ -24,11 +31,11 @@ export const useRunner = () => {
         res.stderr ||
         JSON.stringify(res)
     } catch (e: any) {
-      error.value = e.message || "Run failed"
+      error.value = e?.message || "Run failed"
     } finally {
       running.value = false
     }
   }
 
-  return { output, running, run, error }
+  return { output, running, error, run }
 }
